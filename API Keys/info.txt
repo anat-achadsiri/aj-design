@@ -1,0 +1,15 @@
+  ถ้าต้องการใช้ฟีเจอร์ Import from Image:
+
+  1. ไปที่ https://console.anthropic.com                                                                                                       
+
+  2. สมัครบัญชี / Login
+  3. ไปที่ API Keys → สร้าง key ใหม่                                                                                                           
+
+  4. เติมเงิน (มี free credit เริ่มต้นให้)                                                                                                     
+
+  5. นำ API Key มาใส่ในช่อง
+
+  ค่าใช ้จ่ายโดยประมาณ:
+
+  - Claude Sonnet: ~$3 / 1M input tokens, $15 / 1M output tokens
+  - การวิเคราะห์รูปภาพ 1 ครั้ง ประมาณ $0.01-0.05 ขึ้นกับขนาดรูป  

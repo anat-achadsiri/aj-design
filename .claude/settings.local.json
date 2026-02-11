@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:keenthemes.com)",
+      "WebSearch",
+      "Bash(find:*)",
+      "Bash(git config:*)"
+    ]
+  }
+}
