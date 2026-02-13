@@ -571,6 +571,22 @@
             outline-offset: 2px;
         }
 
+        /* Drag Image Preview */
+        .drag-image {
+            position: absolute;
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0.8;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
+        }
+
+        .dropped-component.dragging {
+            opacity: 0.3;
+        }
+
         /* Resize Handles */
         .resize-handle {
             position: absolute;
@@ -1671,6 +1687,7 @@
             constructor(id = null) {
                 this.id = id || this.generateId();
                 this.filePath = null; // null = never saved
+                this.fileHandle = null; // File System Access API handle
                 this.displayName = 'Untitled';
                 this.isDirty = false;
                 this.content = {
@@ -1945,7 +1962,7 @@
         }
 
         // Close unsaved modal
-        function closeUnsavedModal(action) {
+        async function closeUnsavedModal(action) {
             document.getElementById('unsavedChangesModal').classList.add('hidden');
 
             if (!pendingUnsavedAction) return;
@@ -1961,14 +1978,14 @@
                 // Save first, then continue
                 const doc = documents.find(d => d.id === docId);
                 if (doc) {
-                    if (doc.filePath) {
-                        // Has file path, save directly
-                        saveDocumentToFile(doc, () => {
+                    if (doc.fileHandle) {
+                        // Has file handle, save directly to same file
+                        await saveDocumentToFileHandle(doc, () => {
                             continuePendingAction(pendingAction, docId, targetDocId);
                         });
                     } else {
-                        // No file path, show save dialog
-                        docSaveAsForDocument(doc, () => {
+                        // No file handle, show save dialog
+                        await docSaveAsForDocument(doc, () => {
                             continuePendingAction(pendingAction, docId, targetDocId);
                         });
                     }
@@ -1992,34 +2009,39 @@
             }
         }
 
-        // Save - if no filePath, do Save As
-        function docSave() {
+        // Check if File System Access API is supported
+        function isFileSystemAccessSupported() {
+            return 'showSaveFilePicker' in window && 'showOpenFilePicker' in window;
+        }
+
+        // Save - if has fileHandle, save directly; otherwise do Save As
+        async function docSave() {
             const doc = getActiveDocument();
             if (!doc) return;
 
             // Save current state first
             saveDocumentState(doc);
 
-            if (doc.filePath) {
-                // Has file path, save directly (actually re-download with same name)
-                saveDocumentToFile(doc);
+            if (doc.fileHandle) {
+                // Has file handle, save directly to the same file
+                await saveDocumentToFileHandle(doc);
             } else {
-                // No file path, do Save As
-                docSaveAs();
+                // No file handle, do Save As
+                await docSaveAs();
             }
         }
 
-        // Save As - always ask for name
-        function docSaveAs() {
+        // Save As - always ask for name/location
+        async function docSaveAs() {
             const doc = getActiveDocument();
             if (!doc) return;
 
             saveDocumentState(doc);
-            docSaveAsForDocument(doc);
+            await docSaveAsForDocument(doc);
         }
 
         // Save As for specific document
-        function docSaveAsForDocument(doc, callback) {
+        async function docSaveAsForDocument(doc, callback) {
             const design = {
                 screenId: doc.content.screenId,
                 screenTitle: doc.content.screenTitle,
@@ -2033,8 +2055,47 @@
 
             const json = JSON.stringify(design, null, 2);
             const blob = new Blob([json], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
 
+            // Try File System Access API first
+            if (isFileSystemAccessSupported()) {
+                try {
+                    const suggestedName = (doc.content.screenId || 'screen') + '.json';
+                    const handle = await window.showSaveFilePicker({
+                        suggestedName: suggestedName,
+                        types: [{
+                            description: 'JSON Design File',
+                            accept: { 'application/json': ['.json'] }
+                        }]
+                    });
+
+                    const writable = await handle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
+
+                    // Store the file handle for future saves
+                    doc.fileHandle = handle;
+                    doc.filePath = handle.name;
+                    doc.displayName = handle.name.replace('.json', '');
+                    doc.isDirty = false;
+                    renderDocumentTabs();
+
+                    showToast('Design saved: ' + handle.name, 'success');
+
+                    if (callback) callback();
+                    return;
+                } catch (err) {
+                    // User cancelled or error - fall through to legacy method
+                    if (err.name !== 'AbortError') {
+                        console.error('File System Access API error:', err);
+                    } else {
+                        // User cancelled
+                        return;
+                    }
+                }
+            }
+
+            // Fallback: Legacy download method
+            const url = URL.createObjectURL(blob);
             const fileName = (doc.content.screenId || 'screen') + '.json';
 
             const a = document.createElement('a');
@@ -2045,7 +2106,7 @@
             URL.revokeObjectURL(url);
 
             // Update document info
-            doc.filePath = fileName; // We can't get actual path in browser, use filename
+            doc.filePath = fileName;
             doc.displayName = fileName.replace('.json', '');
             doc.isDirty = false;
             renderDocumentTabs();
@@ -2055,7 +2116,42 @@
             if (callback) callback();
         }
 
-        // Save document to file (download)
+        // Save document directly to existing file handle
+        async function saveDocumentToFileHandle(doc, callback) {
+            const design = {
+                screenId: doc.content.screenId,
+                screenTitle: doc.content.screenTitle,
+                theme: doc.content.theme,
+                canvasWidth: doc.content.canvasWidth,
+                canvasHeight: doc.content.canvasHeight,
+                components: doc.content.components,
+                version: '1.0',
+                createdAt: new Date().toISOString()
+            };
+
+            const json = JSON.stringify(design, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+
+            try {
+                const writable = await doc.fileHandle.createWritable();
+                await writable.write(blob);
+                await writable.close();
+
+                doc.isDirty = false;
+                renderDocumentTabs();
+
+                showToast('Design saved!', 'success');
+
+                if (callback) callback();
+            } catch (err) {
+                console.error('Error saving file:', err);
+                showToast('Error saving file. Try Save As.', 'error');
+                // Clear the file handle since it's no longer valid
+                doc.fileHandle = null;
+            }
+        }
+
+        // Legacy save function (download) - kept for compatibility
         function saveDocumentToFile(doc, callback) {
             const design = {
                 screenId: doc.content.screenId,
@@ -2088,11 +2184,60 @@
         }
 
         // Open document
-        function docOpen() {
-            document.getElementById('fileInput').click();
+        // Open document using File System Access API or fallback
+        async function docOpen() {
+            if (isFileSystemAccessSupported()) {
+                try {
+                    const [handle] = await window.showOpenFilePicker({
+                        types: [{
+                            description: 'JSON Design File',
+                            accept: { 'application/json': ['.json'] }
+                        }],
+                        multiple: false
+                    });
+
+                    const file = await handle.getFile();
+                    const text = await file.text();
+                    const design = JSON.parse(text);
+
+                    // Create new document with file handle
+                    const doc = new Document();
+                    doc.fileHandle = handle; // Store handle for direct save
+                    doc.filePath = handle.name;
+                    doc.displayName = handle.name.replace('.json', '');
+                    doc.content.screenId = design.screenId || '';
+                    doc.content.screenTitle = design.screenTitle || '';
+                    doc.content.theme = design.theme || 'default';
+                    doc.content.canvasWidth = design.canvasWidth || 1200;
+                    doc.content.canvasHeight = design.canvasHeight || 800;
+                    doc.content.components = design.components || [];
+                    doc.isDirty = false;
+
+                    // Find max component ID
+                    doc.componentIdCounter = 1;
+                    doc.content.components.forEach(c => {
+                        const num = parseInt(c.id.replace('comp_', ''));
+                        if (num >= doc.componentIdCounter) doc.componentIdCounter = num + 1;
+                    });
+
+                    documents.push(doc);
+                    switchToDocument(doc.id);
+                    renderDocumentTabs();
+
+                    showToast('Document opened: ' + handle.name, 'success');
+                } catch (err) {
+                    if (err.name !== 'AbortError') {
+                        console.error('Error opening file:', err);
+                        showToast('Error opening file: ' + err.message, 'error');
+                    }
+                }
+            } else {
+                // Fallback to file input
+                document.getElementById('fileInput').click();
+            }
         }
 
-        // Handle file input change for opening
+        // Handle file input change for opening (legacy fallback)
         function handleFileOpen(file) {
             if (!file) return;
 
@@ -2101,7 +2246,7 @@
                 try {
                     const design = JSON.parse(e.target.result);
 
-                    // Create new document
+                    // Create new document (no fileHandle in legacy mode)
                     const doc = new Document();
                     doc.filePath = file.name;
                     doc.displayName = file.name.replace('.json', '');
@@ -3011,6 +3156,40 @@
             }
         }
 
+        // Create drag image element (clone of the component)
+        function createDragImage(comp, el, initialX, initialY) {
+            // Clone the component element
+            const dragImage = el.cloneNode(true);
+            dragImage.className = 'drag-image';
+            dragImage.id = 'drag-image-' + comp.id;
+            dragImage.style.left = (initialX !== undefined ? initialX : comp.x) + 'px';
+            dragImage.style.top = (initialY !== undefined ? initialY : comp.y) + 'px';
+            dragImage.style.width = comp.width + 'px';
+            dragImage.style.height = comp.height + 'px';
+
+            // Remove resize handles from clone
+            dragImage.querySelectorAll('.resize-handle').forEach(h => h.remove());
+
+            canvas.appendChild(dragImage);
+            return dragImage;
+        }
+
+        // Legacy alias for compatibility
+        function createDragGhost(comp, el, initialX, initialY) {
+            return createDragImage(comp, el, initialX, initialY);
+        }
+
+        // Remove drag image element
+        function removeDragImage(compId) {
+            const dragImage = document.getElementById('drag-image-' + compId);
+            if (dragImage) dragImage.remove();
+        }
+
+        // Remove all drag images
+        function removeAllDragImages() {
+            document.querySelectorAll('.drag-image').forEach(img => img.remove());
+        }
+
         // Drag component
         function startDrag(e, compId) {
             const comp = components.find(c => c.id === compId);
@@ -3025,44 +3204,85 @@
                 isMultiDragging = true;
                 isDragging = false;
 
+                // Get canvas screen position
                 const canvasRect = canvas.getBoundingClientRect();
-                const startX = e.clientX - canvasRect.left;
-                const startY = e.clientY - canvasRect.top;
 
-                // Store initial positions of all selected components
-                multiDragOffsets = selectedComponents.map(c => ({
-                    comp: c,
-                    offsetX: c.x - startX,
-                    offsetY: c.y - startY
-                }));
+                // Calculate mouse position on canvas
+                const mouseCanvasX = e.clientX - canvasRect.left;
+                const mouseCanvasY = e.clientY - canvasRect.top;
+
+                // Create ghosts for all selected components
+                // Each ghost maintains relative offset from mouse position
+                const ghostData = selectedComponents.map(c => {
+                    const compEl = document.getElementById(c.id);
+                    compEl.classList.add('dragging');
+
+                    // Calculate offset from mouse to this component's original position
+                    const offsetX = c.x - mouseCanvasX;
+                    const offsetY = c.y - mouseCanvasY;
+
+                    // Initial ghost position: mouse position + offset (keeps relative positions)
+                    const initialX = mouseCanvasX + offsetX;
+                    const initialY = mouseCanvasY + offsetY;
+
+                    const ghost = createDragGhost(c, compEl, initialX, initialY);
+                    return {
+                        comp: c,
+                        ghost: ghost,
+                        el: compEl,
+                        offsetX: offsetX,
+                        offsetY: offsetY,
+                        newX: initialX,
+                        newY: initialY
+                    };
+                });
 
                 const onMouseMove = (moveE) => {
                     if (!isMultiDragging) return;
 
+                    // Get fresh canvas position
                     const canvasRect = canvas.getBoundingClientRect();
-                    const currentX = moveE.clientX - canvasRect.left;
-                    const currentY = moveE.clientY - canvasRect.top;
 
-                    multiDragOffsets.forEach(item => {
-                        let newX = Math.max(0, currentX + item.offsetX);
-                        let newY = Math.max(0, currentY + item.offsetY);
+                    // Calculate current mouse position on canvas
+                    const currentMouseX = moveE.clientX - canvasRect.left;
+                    const currentMouseY = moveE.clientY - canvasRect.top;
+
+                    ghostData.forEach(item => {
+                        // Ghost position = mouse position + offset to maintain relative positions
+                        let newX = currentMouseX + item.offsetX;
+                        let newY = currentMouseY + item.offsetY;
+
+                        // Keep minimum bounds
+                        newX = Math.max(0, newX);
+                        newY = Math.max(0, newY);
 
                         // Apply snap to grid
-                        item.comp.x = snapToGrid(newX);
-                        item.comp.y = snapToGrid(newY);
+                        newX = snapToGrid(newX);
+                        newY = snapToGrid(newY);
 
-                        const compEl = document.getElementById(item.comp.id);
-                        if (compEl) {
-                            compEl.style.left = item.comp.x + 'px';
-                            compEl.style.top = item.comp.y + 'px';
-                        }
+                        // Update ghost position
+                        item.ghost.style.left = newX + 'px';
+                        item.ghost.style.top = newY + 'px';
+                        item.newX = newX;
+                        item.newY = newY;
                     });
-
-                    autoResizeCanvas();
                 };
 
                 const onMouseUp = () => {
                     isMultiDragging = false;
+
+                    // Move components to ghost positions
+                    ghostData.forEach(item => {
+                        if (item.newX !== undefined) {
+                            item.comp.x = item.newX;
+                            item.comp.y = item.newY;
+                            item.el.style.left = item.comp.x + 'px';
+                            item.el.style.top = item.comp.y + 'px';
+                        }
+                        item.el.classList.remove('dragging');
+                        item.ghost.remove();
+                    });
+
                     multiDragOffsets = [];
                     saveHistory();
                     autoResizeCanvas();
@@ -3076,35 +3296,66 @@
                 // Single drag mode
                 isDragging = true;
 
-                dragOffset = {
-                    x: e.clientX - rect.left,
-                    y: e.clientY - rect.top
+                // Use component's screen position as reference to calculate canvas coordinates
+                // This is more reliable than using canvas.getBoundingClientRect()
+                const elRect = el.getBoundingClientRect();
+
+                // Calculate mouse position in canvas coordinates using component as reference
+                // Formula: mouseCanvasPos = mouseScreenPos - componentScreenPos + componentCanvasPos
+                const getMouseCanvasPos = (event) => {
+                    const currentElRect = el.getBoundingClientRect();
+                    return {
+                        x: event.clientX - currentElRect.left + comp.x,
+                        y: event.clientY - currentElRect.top + comp.y
+                    };
                 };
+
+                // Initial drag image position = mouse position on canvas
+                const initialPos = getMouseCanvasPos(e);
+                let dragX = initialPos.x;
+                let dragY = initialPos.y;
+
+                // Create drag image at mouse position
+                const dragImage = createDragImage(comp, el, dragX, dragY);
+                el.classList.add('dragging');
+
+                let newX = dragX;
+                let newY = dragY;
 
                 const onMouseMove = (moveE) => {
                     if (!isDragging) return;
 
-                    const canvasRect = canvas.getBoundingClientRect();
-                    let newX = moveE.clientX - canvasRect.left - dragOffset.x;
-                    let newY = moveE.clientY - canvasRect.top - dragOffset.y;
+                    // Calculate mouse position on canvas
+                    const pos = getMouseCanvasPos(moveE);
+                    newX = pos.x;
+                    newY = pos.y;
 
                     // Keep minimum bounds (allow expansion to the right and bottom)
                     newX = Math.max(0, newX);
                     newY = Math.max(0, newY);
 
                     // Apply snap to grid
-                    comp.x = snapToGrid(newX);
-                    comp.y = snapToGrid(newY);
+                    newX = snapToGrid(newX);
+                    newY = snapToGrid(newY);
 
-                    el.style.left = comp.x + 'px';
-                    el.style.top = comp.y + 'px';
-
-                    // Auto-resize canvas while dragging
-                    autoResizeCanvas();
+                    // Update drag image position
+                    dragImage.style.left = newX + 'px';
+                    dragImage.style.top = newY + 'px';
                 };
 
                 const onMouseUp = () => {
                     isDragging = false;
+
+                    // Move component to ghost position
+                    comp.x = newX;
+                    comp.y = newY;
+                    el.style.left = comp.x + 'px';
+                    el.style.top = comp.y + 'px';
+
+                    // Remove ghost and dragging class
+                    el.classList.remove('dragging');
+                    ghost.remove();
+
                     saveHistory();
                     autoResizeCanvas();
                     document.removeEventListener('mousemove', onMouseMove);
