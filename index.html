@@ -301,10 +301,8 @@
 
         .canvas {
             background: white;
-            min-width: 1200px;
-            min-height: 800px;
-            width: max-content;
-            height: max-content;
+            min-width: 400px;
+            min-height: 300px;
             position: relative;
             border: 2px dashed #cbd5e1;
             border-radius: 8px;
@@ -313,9 +311,60 @@
             padding-right: 50px;
         }
 
+        /* Canvas Resize Handles */
+        .canvas-resize-handle {
+            position: absolute;
+            background: #3b82f6;
+            border-radius: 2px;
+            z-index: 100;
+        }
+
+        .canvas-resize-handle.right {
+            right: -4px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 8px;
+            height: 40px;
+            cursor: e-resize;
+        }
+
+        .canvas-resize-handle.bottom {
+            bottom: -4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 8px;
+            cursor: s-resize;
+        }
+
+        .canvas-resize-handle.corner {
+            right: -6px;
+            bottom: -6px;
+            width: 12px;
+            height: 12px;
+            cursor: se-resize;
+            border-radius: 3px;
+        }
+
         .canvas.drag-over {
             border-color: #3b82f6;
             background: #eff6ff;
+        }
+
+        /* Marquee Selection */
+        .marquee-selection {
+            position: absolute;
+            border: 2px dashed #3b82f6;
+            background: rgba(59, 130, 246, 0.1);
+            pointer-events: none;
+            z-index: 1000;
+            display: none;
+        }
+
+        /* Multi-selected components */
+        .dropped-component.multi-selected {
+            outline: 2px solid #8b5cf6;
+            outline-offset: 2px;
         }
 
         /* Dropped Components */
@@ -357,48 +406,70 @@
 
         /* Component Styles - Using Theme Variables */
         .comp-label {
+            display: block;
+            width: 100%;
+            height: 100%;
             font-size: 14px;
             color: var(--label-color);
             padding: 4px;
+            box-sizing: border-box;
+            line-height: 1.4;
+            overflow: hidden;
+            cursor: text;
+            outline: none;
+        }
+
+        .comp-label:focus {
+            background: #fefce8;
+            border: 1px dashed #facc15;
+            border-radius: 2px;
         }
 
         .comp-textbox {
-            width: 200px;
+            width: 100%;
+            height: 100%;
             padding: 8px 12px;
             border: 1px solid var(--input-border);
             border-radius: 4px;
             font-size: 14px;
             background: white;
+            box-sizing: border-box;
         }
 
         .comp-textarea {
-            width: 300px;
-            height: 80px;
+            width: 100%;
+            height: 100%;
             padding: 8px 12px;
             border: 1px solid var(--input-border);
             border-radius: 4px;
             font-size: 14px;
             background: white;
             resize: none;
+            box-sizing: border-box;
         }
 
         .comp-datepicker {
             display: flex;
             align-items: center;
+            width: 100%;
+            height: 100%;
             gap: 8px;
         }
 
         .comp-datepicker input {
-            width: 120px;
+            flex: 1;
+            height: 100%;
             padding: 8px 12px;
             border: 1px solid var(--input-border);
             border-radius: 4px;
             font-size: 14px;
+            box-sizing: border-box;
         }
 
         .comp-datepicker .calendar-icon {
             width: 32px;
-            height: 32px;
+            height: 100%;
+            min-height: 32px;
             border: 1px solid var(--input-border);
             border-radius: 4px;
             display: flex;
@@ -409,13 +480,39 @@
         }
 
         .comp-dropdown {
-            width: 200px;
-            padding: 8px 12px;
+            width: 100%;
+            height: 100%;
+            padding: 0 32px 0 12px;
             border: 1px solid var(--input-border);
             border-radius: 4px;
             font-size: 14px;
-            background: white;
+            background-color: white;
             cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            box-sizing: border-box;
+        }
+
+        .comp-dropdown-wrapper {
+            position: relative;
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .comp-dropdown-wrapper::after {
+            content: '';
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 6px solid #475569;
+            pointer-events: none;
         }
 
         .comp-checkbox {
@@ -451,12 +548,15 @@
         }
 
         .comp-button {
+            width: 100%;
+            height: 100%;
             padding: 8px 20px;
             border: 1px solid var(--input-border);
             border-radius: 4px;
             font-size: 14px;
             cursor: pointer;
             background: var(--button-bg);
+            box-sizing: border-box;
         }
 
         .comp-button.primary {
@@ -478,6 +578,7 @@
         }
 
         .comp-table {
+            width: 100%;
             border-collapse: collapse;
             font-size: 13px;
         }
@@ -499,6 +600,8 @@
         .comp-tabs {
             display: flex;
             flex-direction: column;
+            width: 100%;
+            height: 100%;
         }
 
         .comp-tabs .tab-header {
@@ -527,14 +630,20 @@
             border: 1px solid #e2e8f0;
             border-top: none;
             padding: 16px;
-            min-height: 100px;
+            flex: 1;
             background: white;
+            box-sizing: border-box;
         }
 
         .comp-panel {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
             border: 1px solid #e2e8f0;
             border-radius: 4px;
             background: white;
+            box-sizing: border-box;
         }
 
         .comp-panel .panel-header {
@@ -548,14 +657,26 @@
 
         .comp-panel .panel-body {
             padding: 16px;
-            min-height: 80px;
+            flex: 1;
         }
 
         .comp-title {
+            display: block;
+            width: 100%;
+            height: 100%;
             font-size: 18px;
             font-weight: 600;
             color: var(--label-color);
-            padding: 8px 0;
+            padding: 8px 4px;
+            box-sizing: border-box;
+            cursor: text;
+            outline: none;
+        }
+
+        .comp-title:focus {
+            background: #fefce8;
+            border: 1px dashed #facc15;
+            border-radius: 2px;
         }
 
         .comp-image {
@@ -644,14 +765,15 @@
         }
 
         .comp-icon-btn {
-            width: 32px;
-            height: 32px;
+            width: 100%;
+            height: 100%;
             border-radius: 4px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             font-size: 16px;
+            box-sizing: border-box;
         }
 
         .comp-icon-btn.edit { background: #dbeafe; color: #2563eb; }
@@ -689,7 +811,9 @@
             padding: 8px 12px;
             font-size: 12px;
             color: #92400e;
-            max-width: 200px;
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
@@ -1041,6 +1165,12 @@
             <div class="canvas-container">
                 <div class="canvas" id="canvas">
                     <!-- Dropped components will appear here -->
+                    <!-- Marquee Selection -->
+                    <div class="marquee-selection" id="marqueeSelection"></div>
+                    <!-- Canvas Resize Handles -->
+                    <div class="canvas-resize-handle right" data-resize="e"></div>
+                    <div class="canvas-resize-handle bottom" data-resize="s"></div>
+                    <div class="canvas-resize-handle corner" data-resize="se"></div>
                 </div>
             </div>
         </div>
@@ -1056,8 +1186,8 @@
 
     <!-- Context Menu -->
     <div class="context-menu hidden" id="contextMenu">
-        <div class="context-menu-item" onclick="duplicateComponent()">
-            📋 Duplicate
+        <div class="context-menu-item" onclick="duplicateSelectedComponents()">
+            📋 Duplicate (Ctrl+D)
         </div>
         <div class="context-menu-item" onclick="bringToFront()">
             ⬆️ Bring to Front
@@ -1066,8 +1196,8 @@
             ⬇️ Send to Back
         </div>
         <div class="context-menu-divider"></div>
-        <div class="context-menu-item danger" onclick="deleteComponent()">
-            🗑️ Delete
+        <div class="context-menu-item danger" onclick="deleteSelectedComponents()">
+            🗑️ Delete (Del)
         </div>
     </div>
 
@@ -1138,9 +1268,12 @@
         // State
         let components = [];
         let selectedComponent = null;
+        let selectedComponents = []; // For multi-selection
         let draggedType = null;
         let isDragging = false;
+        let isMultiDragging = false;
         let dragOffset = { x: 0, y: 0 };
+        let multiDragOffsets = []; // Store offsets for each selected component
         let history = [];
         let historyIndex = -1;
         let componentIdCounter = 1;
@@ -1148,6 +1281,12 @@
         let resizeHandle = null;
         let resizeStart = { x: 0, y: 0, width: 0, height: 0 };
         let currentTheme = 'default';
+
+        // Marquee selection
+        let isMarqueeSelecting = false;
+        let marqueeJustFinished = false;
+        let marqueeStart = { x: 0, y: 0 };
+        let marqueeEl = null;
 
         // Theme management
         function changeTheme(theme) {
@@ -1222,9 +1361,115 @@
         });
 
         // Click on canvas to deselect
+        // Marquee selection - mouse down on canvas
+        canvas.addEventListener('mousedown', (e) => {
+            // Skip if clicking on resize handles
+            if (e.target.classList.contains('canvas-resize-handle')) return;
+            if (e.target.classList.contains('resize-handle')) return;
+
+            // Only start marquee if clicking directly on canvas background
+            // (not on dropped components or their children)
+            const isOnCanvas = e.target === canvas ||
+                               e.target.id === 'marqueeSelection' ||
+                               e.target.closest('.canvas') === canvas && !e.target.closest('.dropped-component');
+
+            if (isOnCanvas && !e.target.closest('.dropped-component')) {
+                e.preventDefault();
+                marqueeEl = document.getElementById('marqueeSelection');
+                const rect = canvas.getBoundingClientRect();
+                const container = canvas.parentElement; // canvas-container
+
+                marqueeStart = {
+                    x: e.clientX - rect.left,
+                    y: e.clientY - rect.top
+                };
+                isMarqueeSelecting = true;
+
+                marqueeEl.style.left = marqueeStart.x + 'px';
+                marqueeEl.style.top = marqueeStart.y + 'px';
+                marqueeEl.style.width = '0px';
+                marqueeEl.style.height = '0px';
+                marqueeEl.style.display = 'block';
+
+                // Clear selection unless holding Shift
+                if (!e.shiftKey) {
+                    clearSelection();
+                }
+            }
+        });
+
+        // Marquee selection - mouse move
+        document.addEventListener('mousemove', (e) => {
+            if (!isMarqueeSelecting || !marqueeEl) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const currentX = e.clientX - rect.left;
+            const currentY = e.clientY - rect.top;
+
+            const x = Math.min(marqueeStart.x, currentX);
+            const y = Math.min(marqueeStart.y, currentY);
+            const width = Math.abs(currentX - marqueeStart.x);
+            const height = Math.abs(currentY - marqueeStart.y);
+
+            marqueeEl.style.left = x + 'px';
+            marqueeEl.style.top = y + 'px';
+            marqueeEl.style.width = width + 'px';
+            marqueeEl.style.height = height + 'px';
+        });
+
+        // Marquee selection - mouse up
+        document.addEventListener('mouseup', (e) => {
+            if (isMarqueeSelecting && marqueeEl) {
+                const marqueeWidth = parseInt(marqueeEl.style.width) || 0;
+                const marqueeHeight = parseInt(marqueeEl.style.height) || 0;
+
+                // Only process if marquee has some size (not just a click)
+                if (marqueeWidth > 5 || marqueeHeight > 5) {
+                    const marqueeRect = {
+                        left: parseInt(marqueeEl.style.left),
+                        top: parseInt(marqueeEl.style.top),
+                        right: parseInt(marqueeEl.style.left) + marqueeWidth,
+                        bottom: parseInt(marqueeEl.style.top) + marqueeHeight
+                    };
+
+                    // Find components that intersect with marquee
+                    const selectedIds = [];
+                    components.forEach(comp => {
+                        const compRect = {
+                            left: comp.x,
+                            top: comp.y,
+                            right: comp.x + comp.width,
+                            bottom: comp.y + comp.height
+                        };
+
+                        // Check intersection
+                        if (!(compRect.right < marqueeRect.left ||
+                              compRect.left > marqueeRect.right ||
+                              compRect.bottom < marqueeRect.top ||
+                              compRect.top > marqueeRect.bottom)) {
+                            selectedIds.push(comp.id);
+                        }
+                    });
+
+                    if (selectedIds.length > 0) {
+                        selectMultipleComponents(selectedIds);
+                    }
+
+                    marqueeJustFinished = true;
+                    setTimeout(() => { marqueeJustFinished = false; }, 100);
+                }
+
+                marqueeEl.style.display = 'none';
+                isMarqueeSelecting = false;
+            }
+        });
+
         canvas.addEventListener('click', (e) => {
+            // Don't clear if marquee just finished or if clicking on component
+            if (marqueeJustFinished) return;
+            if (e.target.closest('.dropped-component')) return;
             if (e.target === canvas) {
-                selectComponent(null);
+                clearSelection();
             }
         });
 
@@ -1235,8 +1480,16 @@
 
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Delete' && selectedComponent) {
-                deleteComponent();
+            // Delete selected components
+            if (e.key === 'Delete' && selectedComponents.length > 0) {
+                deleteSelectedComponents();
+            }
+            // Ctrl+D to duplicate selected
+            if (e.ctrlKey && e.key === 'd') {
+                e.preventDefault();
+                if (selectedComponents.length > 0) {
+                    duplicateSelectedComponents();
+                }
             }
             if (e.ctrlKey && e.key === 'z') {
                 e.preventDefault();
@@ -1245,10 +1498,6 @@
             if (e.ctrlKey && e.key === 'y') {
                 e.preventDefault();
                 redo();
-            }
-            if (e.ctrlKey && e.key === 'd' && selectedComponent) {
-                e.preventDefault();
-                duplicateComponent();
             }
         });
 
@@ -1357,9 +1606,7 @@
             el.style.left = comp.x + 'px';
             el.style.top = comp.y + 'px';
             el.style.width = comp.width + 'px';
-            if (comp.type !== 'label' && comp.type !== 'title') {
-                el.style.height = comp.height + 'px';
-            }
+            el.style.height = comp.height + 'px';
 
             el.innerHTML = getComponentHTML(comp);
 
@@ -1367,13 +1614,25 @@
             el.addEventListener('mousedown', (e) => {
                 if (e.target.classList.contains('resize-handle')) return;
                 e.stopPropagation();
-                selectComponent(comp.id);
+
+                // Ctrl+click to add to selection
+                if (e.ctrlKey || e.metaKey) {
+                    selectComponent(comp.id, true);
+                } else if (!selectedComponents.some(c => c.id === comp.id)) {
+                    // If clicking on a non-selected component, select only it
+                    selectComponent(comp.id);
+                }
+                // If clicking on an already selected component (part of multi-selection), just start drag
                 startDrag(e, comp.id);
             });
 
             el.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
-                selectComponent(comp.id);
+                // Only change selection if this component is NOT already part of multi-selection
+                const isInMultiSelection = selectedComponents.some(c => c.id === comp.id) && selectedComponents.length > 1;
+                if (!isInMultiSelection) {
+                    selectComponent(comp.id);
+                }
                 showContextMenu(e.clientX, e.clientY);
             });
 
@@ -1386,10 +1645,11 @@
 
             switch (comp.type) {
                 case 'label':
-                    return `<span class="comp-label" style="font-size: ${p.fontSize}px; font-weight: ${p.bold ? 'bold' : 'normal'}">${p.text}</span>`;
+                    const labelText = (p.text || '').replace(/\n/g, '<br>');
+                    return `<div class="comp-label" contenteditable="true" data-comp-id="${comp.id}" style="font-size: ${p.fontSize}px; font-weight: ${p.bold ? 'bold' : 'normal'}" onblur="saveLabelText(this)" onkeydown="handleLabelKeydown(event, this)">${labelText}</div>`;
 
                 case 'title':
-                    return `<span class="comp-title" style="font-size: ${p.fontSize}px">${p.text}</span>`;
+                    return `<div class="comp-title" contenteditable="true" data-comp-id="${comp.id}" style="font-size: ${p.fontSize}px" onblur="saveLabelText(this)" onkeydown="handleLabelKeydown(event, this)">${p.text}</div>`;
 
                 case 'textbox':
                     return `<input type="text" class="comp-textbox" placeholder="${p.placeholder}" style="width: 100%">`;
@@ -1404,10 +1664,12 @@
                     </div>`;
 
                 case 'dropdown':
-                    return `<select class="comp-dropdown" style="width: 100%">
-                        <option value="">${p.placeholder}</option>
-                        ${p.options.split(',').map(opt => `<option>${opt.trim()}</option>`).join('')}
-                    </select>`;
+                    return `<div class="comp-dropdown-wrapper">
+                        <select class="comp-dropdown">
+                            <option value="">${p.placeholder}</option>
+                            ${p.options.split(',').map(opt => `<option>${opt.trim()}</option>`).join('')}
+                        </select>
+                    </div>`;
 
                 case 'checkbox':
                     return `<label class="comp-checkbox">
@@ -1617,8 +1879,6 @@
         }
 
         function addResizeHandles(el, comp) {
-            if (comp.type === 'label' || comp.type === 'title') return;
-
             const handles = ['se', 'e', 's'];
             handles.forEach(pos => {
                 const handle = document.createElement('div');
@@ -1673,65 +1933,168 @@
         }
 
         // Select component
-        function selectComponent(id) {
-            // Remove previous selection
-            document.querySelectorAll('.dropped-component').forEach(el => {
-                el.classList.remove('selected');
-            });
+        function selectComponent(id, addToSelection = false) {
+            if (!addToSelection) {
+                // Clear all selections
+                document.querySelectorAll('.dropped-component').forEach(el => {
+                    el.classList.remove('selected');
+                    el.classList.remove('multi-selected');
+                });
+                selectedComponents = [];
+            }
 
             if (id) {
                 const el = document.getElementById(id);
-                if (el) {
-                    el.classList.add('selected');
+                const comp = components.find(c => c.id === id);
+
+                if (addToSelection) {
+                    // Toggle selection
+                    const idx = selectedComponents.findIndex(c => c.id === id);
+                    if (idx >= 0) {
+                        selectedComponents.splice(idx, 1);
+                        if (el) el.classList.remove('multi-selected');
+                    } else {
+                        if (comp) selectedComponents.push(comp);
+                        if (el) el.classList.add('multi-selected');
+                    }
+                    // Update primary selection
+                    selectedComponent = selectedComponents.length > 0 ? selectedComponents[0] : null;
+                } else {
+                    if (el) el.classList.add('selected');
+                    selectedComponent = comp;
+                    selectedComponents = comp ? [comp] : [];
                 }
-                selectedComponent = components.find(c => c.id === id);
                 showProperties(selectedComponent);
             } else {
                 selectedComponent = null;
+                selectedComponents = [];
                 showProperties(null);
+            }
+        }
+
+        // Clear all selections
+        function clearSelection() {
+            document.querySelectorAll('.dropped-component').forEach(el => {
+                el.classList.remove('selected');
+                el.classList.remove('multi-selected');
+            });
+            selectedComponent = null;
+            selectedComponents = [];
+            showProperties(null);
+        }
+
+        // Select multiple components (from marquee)
+        function selectMultipleComponents(compIds) {
+            clearSelection();
+            compIds.forEach((id, index) => {
+                const el = document.getElementById(id);
+                const comp = components.find(c => c.id === id);
+                if (el && comp) {
+                    el.classList.add('multi-selected');
+                    selectedComponents.push(comp);
+                }
+            });
+            if (selectedComponents.length > 0) {
+                selectedComponent = selectedComponents[0];
+                showProperties(selectedComponent);
             }
         }
 
         // Drag component
         function startDrag(e, compId) {
-            isDragging = true;
             const comp = components.find(c => c.id === compId);
             const el = document.getElementById(compId);
             const rect = el.getBoundingClientRect();
 
-            dragOffset = {
-                x: e.clientX - rect.left,
-                y: e.clientY - rect.top
-            };
+            // Check if this component is part of multi-selection
+            const isInMultiSelection = selectedComponents.some(c => c.id === compId) && selectedComponents.length > 1;
 
-            const onMouseMove = (e) => {
-                if (!isDragging) return;
+            if (isInMultiSelection) {
+                // Multi-drag mode
+                isMultiDragging = true;
+                isDragging = false;
 
                 const canvasRect = canvas.getBoundingClientRect();
-                comp.x = e.clientX - canvasRect.left - dragOffset.x;
-                comp.y = e.clientY - canvasRect.top - dragOffset.y;
+                const startX = e.clientX - canvasRect.left;
+                const startY = e.clientY - canvasRect.top;
 
-                // Keep minimum bounds (allow expansion to the right and bottom)
-                comp.x = Math.max(0, comp.x);
-                comp.y = Math.max(0, comp.y);
+                // Store initial positions of all selected components
+                multiDragOffsets = selectedComponents.map(c => ({
+                    comp: c,
+                    offsetX: c.x - startX,
+                    offsetY: c.y - startY
+                }));
 
-                el.style.left = comp.x + 'px';
-                el.style.top = comp.y + 'px';
+                const onMouseMove = (moveE) => {
+                    if (!isMultiDragging) return;
 
-                // Auto-resize canvas while dragging
-                autoResizeCanvas();
-            };
+                    const canvasRect = canvas.getBoundingClientRect();
+                    const currentX = moveE.clientX - canvasRect.left;
+                    const currentY = moveE.clientY - canvasRect.top;
 
-            const onMouseUp = () => {
-                isDragging = false;
-                saveHistory();
-                autoResizeCanvas();
-                document.removeEventListener('mousemove', onMouseMove);
-                document.removeEventListener('mouseup', onMouseUp);
-            };
+                    multiDragOffsets.forEach(item => {
+                        item.comp.x = Math.max(0, currentX + item.offsetX);
+                        item.comp.y = Math.max(0, currentY + item.offsetY);
 
-            document.addEventListener('mousemove', onMouseMove);
-            document.addEventListener('mouseup', onMouseUp);
+                        const compEl = document.getElementById(item.comp.id);
+                        if (compEl) {
+                            compEl.style.left = item.comp.x + 'px';
+                            compEl.style.top = item.comp.y + 'px';
+                        }
+                    });
+
+                    autoResizeCanvas();
+                };
+
+                const onMouseUp = () => {
+                    isMultiDragging = false;
+                    multiDragOffsets = [];
+                    saveHistory();
+                    autoResizeCanvas();
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                };
+
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            } else {
+                // Single drag mode
+                isDragging = true;
+
+                dragOffset = {
+                    x: e.clientX - rect.left,
+                    y: e.clientY - rect.top
+                };
+
+                const onMouseMove = (moveE) => {
+                    if (!isDragging) return;
+
+                    const canvasRect = canvas.getBoundingClientRect();
+                    comp.x = moveE.clientX - canvasRect.left - dragOffset.x;
+                    comp.y = moveE.clientY - canvasRect.top - dragOffset.y;
+
+                    // Keep minimum bounds (allow expansion to the right and bottom)
+                    comp.x = Math.max(0, comp.x);
+                    comp.y = Math.max(0, comp.y);
+
+                    el.style.left = comp.x + 'px';
+                    el.style.top = comp.y + 'px';
+
+                    // Auto-resize canvas while dragging
+                    autoResizeCanvas();
+                };
+
+                const onMouseUp = () => {
+                    isDragging = false;
+                    saveHistory();
+                    autoResizeCanvas();
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                };
+
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            }
         }
 
         // Show properties panel
@@ -1780,6 +2143,24 @@
 
             switch (comp.type) {
                 case 'label':
+                    html += `
+                        <div class="property-group">
+                            <label>Text</label>
+                            <textarea rows="3" onchange="updateProp('text', this.value)">${p.text}</textarea>
+                        </div>
+                        <div class="property-group">
+                            <label>Font Size</label>
+                            <input type="number" value="${p.fontSize}" onchange="updateProp('fontSize', parseInt(this.value))">
+                        </div>
+                        <div class="property-group">
+                            <label>Bold</label>
+                            <select onchange="updateProp('bold', this.value === 'true')">
+                                <option value="false" ${!p.bold ? 'selected' : ''}>No</option>
+                                <option value="true" ${p.bold ? 'selected' : ''}>Yes</option>
+                            </select>
+                    `;
+                    break;
+
                 case 'title':
                     html += `
                         <div class="property-group">
@@ -1791,17 +2172,6 @@
                             <input type="number" value="${p.fontSize}" onchange="updateProp('fontSize', parseInt(this.value))">
                         </div>
                     `;
-                    if (comp.type === 'label') {
-                        html += `
-                            <div class="property-group">
-                                <label>Bold</label>
-                                <select onchange="updateProp('bold', this.value === 'true')">
-                                    <option value="false" ${!p.bold ? 'selected' : ''}>No</option>
-                                    <option value="true" ${p.bold ? 'selected' : ''}>Yes</option>
-                                </select>
-                            </div>
-                        `;
-                    }
                     break;
 
                 case 'textbox':
@@ -2097,6 +2467,53 @@
             saveHistory();
         }
 
+        // Save label text from inline editing
+        function saveLabelText(el) {
+            const compId = el.dataset.compId;
+            const comp = components.find(c => c.id === compId);
+            if (!comp) return;
+
+            // Convert <br> and <div> back to \n for storage
+            let text = el.innerHTML
+                .replace(/<div>/gi, '\n')
+                .replace(/<\/div>/gi, '')
+                .replace(/<br\s*\/?>/gi, '\n')
+                .replace(/&nbsp;/g, ' ');
+
+            // Remove HTML tags and decode entities
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = text;
+            text = tempDiv.textContent || tempDiv.innerText || '';
+
+            if (comp.properties.text !== text) {
+                comp.properties.text = text;
+                saveHistory();
+                // Update properties panel if this component is selected
+                if (selectedComponent && selectedComponent.id === compId) {
+                    showProperties(comp);
+                }
+            }
+        }
+
+        // Handle keyboard events in label editing
+        function handleLabelKeydown(e, el) {
+            // Shift+Enter for new line (default behavior)
+            // Enter without shift to finish editing
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                el.blur();
+            }
+            // Escape to cancel
+            if (e.key === 'Escape') {
+                const compId = el.dataset.compId;
+                const comp = components.find(c => c.id === compId);
+                if (comp) {
+                    el.innerHTML = (comp.properties.text || '').replace(/\n/g, '<br>');
+                }
+                el.blur();
+            }
+        }
+
         function updateComponentElement(comp) {
             const el = document.getElementById(comp.id);
             if (!el) return;
@@ -2104,9 +2521,7 @@
             el.style.left = comp.x + 'px';
             el.style.top = comp.y + 'px';
             el.style.width = comp.width + 'px';
-            if (comp.type !== 'label' && comp.type !== 'title') {
-                el.style.height = comp.height + 'px';
-            }
+            el.style.height = comp.height + 'px';
 
             // Re-render inner HTML while preserving resize handles
             const handles = el.querySelectorAll('.resize-handle');
@@ -2153,6 +2568,41 @@
             components = components.filter(c => c.id !== selectedComponent.id);
             selectComponent(null);
             saveHistory();
+        }
+
+        // Delete all selected components
+        function deleteSelectedComponents() {
+            if (selectedComponents.length === 0) return;
+
+            selectedComponents.forEach(comp => {
+                const el = document.getElementById(comp.id);
+                if (el) el.remove();
+                components = components.filter(c => c.id !== comp.id);
+            });
+
+            clearSelection();
+            saveHistory();
+        }
+
+        // Duplicate all selected components (Ctrl+D)
+        function duplicateSelectedComponents() {
+            if (selectedComponents.length === 0) return;
+
+            const newComps = [];
+            selectedComponents.forEach(comp => {
+                const newComp = JSON.parse(JSON.stringify(comp));
+                newComp.id = `comp_${componentIdCounter++}`;
+                newComp.x += 20;
+                newComp.y += 20;
+                components.push(newComp);
+                renderComponent(newComp);
+                newComps.push(newComp);
+            });
+
+            // Select the new components
+            selectMultipleComponents(newComps.map(c => c.id));
+            saveHistory();
+            showToast(`Duplicated ${newComps.length} component(s)`, 'success');
         }
 
         function bringToFront() {
@@ -2231,6 +2681,8 @@
                 if (bottom > maxBottom) maxBottom = bottom;
             });
 
+            canvas.style.width = maxRight + 'px';
+            canvas.style.height = maxBottom + 'px';
             canvas.style.minWidth = maxRight + 'px';
             canvas.style.minHeight = maxBottom + 'px';
 
@@ -2244,14 +2696,72 @@
         }
 
         // Manually set canvas size
-        function setCanvasSize() {
+        function setCanvasSize(showMessage = true) {
             const width = parseInt(document.getElementById('canvasWidth').value) || 1200;
             const height = parseInt(document.getElementById('canvasHeight').value) || 800;
 
-            canvas.style.minWidth = Math.max(800, width) + 'px';
-            canvas.style.minHeight = Math.max(600, height) + 'px';
+            canvas.style.width = Math.max(400, width) + 'px';
+            canvas.style.height = Math.max(300, height) + 'px';
+            canvas.style.minWidth = Math.max(400, width) + 'px';
+            canvas.style.minHeight = Math.max(300, height) + 'px';
 
-            showToast(`Canvas size: ${width} x ${height}`, 'success');
+            if (showMessage) {
+                showToast(`Canvas size: ${width} x ${height}`, 'success');
+            }
+        }
+
+        // Canvas resize drag functionality
+        function initCanvasResize() {
+            const resizeHandles = document.querySelectorAll('.canvas-resize-handle');
+            let isResizingCanvas = false;
+            let canvasResizeType = '';
+            let canvasResizeStart = { x: 0, y: 0, width: 0, height: 0 };
+
+            resizeHandles.forEach(handle => {
+                handle.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    isResizingCanvas = true;
+                    canvasResizeType = handle.dataset.resize;
+                    canvasResizeStart = {
+                        x: e.clientX,
+                        y: e.clientY,
+                        width: canvas.offsetWidth,
+                        height: canvas.offsetHeight
+                    };
+                });
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isResizingCanvas) return;
+
+                const dx = e.clientX - canvasResizeStart.x;
+                const dy = e.clientY - canvasResizeStart.y;
+
+                let newWidth = canvasResizeStart.width;
+                let newHeight = canvasResizeStart.height;
+
+                if (canvasResizeType.includes('e')) {
+                    newWidth = Math.max(400, canvasResizeStart.width + dx);
+                }
+                if (canvasResizeType.includes('s')) {
+                    newHeight = Math.max(300, canvasResizeStart.height + dy);
+                }
+
+                canvas.style.width = newWidth + 'px';
+                canvas.style.height = newHeight + 'px';
+                canvas.style.minWidth = newWidth + 'px';
+                canvas.style.minHeight = newHeight + 'px';
+
+                document.getElementById('canvasWidth').value = newWidth;
+                document.getElementById('canvasHeight').value = newHeight;
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (isResizingCanvas) {
+                    isResizingCanvas = false;
+                }
+            });
         }
 
         // Fit canvas to components (shrink to fit)
@@ -2275,15 +2785,13 @@
             });
 
             // Round up to nearest 100
-            const newWidth = Math.max(800, Math.ceil(maxRight / 100) * 100);
-            const newHeight = Math.max(600, Math.ceil(maxBottom / 100) * 100);
+            const newWidth = Math.max(400, Math.ceil(maxRight / 100) * 100);
+            const newHeight = Math.max(300, Math.ceil(maxBottom / 100) * 100);
 
             document.getElementById('canvasWidth').value = newWidth;
             document.getElementById('canvasHeight').value = newHeight;
 
-            canvas.style.minWidth = newWidth + 'px';
-            canvas.style.minHeight = newHeight + 'px';
-
+            setCanvasSize(false);
             showToast(`Canvas fitted: ${newWidth} x ${newHeight}`, 'success');
         }
 
@@ -2368,11 +2876,13 @@
             if (typeof html2canvas !== 'undefined') {
                 // Hide resize handles and selection before export
                 const resizeHandles = canvas.querySelectorAll('.resize-handle');
+                const canvasResizeHandles = canvas.querySelectorAll('.canvas-resize-handle');
                 const selectedComponents = canvas.querySelectorAll('.dropped-component.selected');
                 const allComponents = canvas.querySelectorAll('.dropped-component');
 
                 // Store original states and hide handles
                 resizeHandles.forEach(h => h.style.display = 'none');
+                canvasResizeHandles.forEach(h => h.style.display = 'none');
 
                 // Remove selection outline temporarily
                 selectedComponents.forEach(c => c.classList.remove('selected'));
@@ -2395,6 +2905,7 @@
 
                     // Restore resize handles
                     resizeHandles.forEach(h => h.style.display = '');
+                    canvasResizeHandles.forEach(h => h.style.display = '');
 
                     // Restore selection
                     selectedComponents.forEach(c => c.classList.add('selected'));
@@ -2734,6 +3245,8 @@ Return format:
 
         // Initialize
         saveHistory();
+        initCanvasResize();
+        setCanvasSize(false);
     </script>
 
     <!-- Optional: Add html2canvas for PNG export -->

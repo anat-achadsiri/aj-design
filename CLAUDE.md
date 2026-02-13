@@ -4,21 +4,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-SA Screen Designer is a browser-based UI specification/wireframe tool for designing screen mockups. It is a single-page HTML application (`designer.html`) with no build system - open directly in a browser to use.
+SA Screen Designer is a browser-based UI specification/wireframe tool for designing screen mockups. It is a single-page HTML application (`index.html`) with no build system - open directly in a browser to use.
 
 ## Running the Application
 
-Open `designer.html` in a web browser. No server or build step required.
+Open `index.html` in a web browser. No server or build step required.
 
 For PNG export functionality, the application loads html2canvas from CDN.
 
 ## Architecture
 
 ### Single-File Application
-The entire application is contained in `designer.html`:
-- **CSS**: Inline styles with CSS custom properties for theming (lines 9-830)
-- **HTML**: Component palette sidebar, canvas, and properties panel (lines 832-1001)
-- **JavaScript**: All logic including drag-drop, component rendering, undo/redo, and save/load (lines 1003-2168)
+The entire application is contained in `index.html`:
+- **CSS**: Inline styles with CSS custom properties for theming (lines 9-886)
+- **HTML**: Component palette sidebar, canvas, properties panel, and modals (lines 888-1136)
+- **JavaScript**: All logic including drag-drop, component rendering, undo/redo, AI import, and save/load (lines 1137-end)
 
 ### Core State Variables
 - `components[]` - Array of all dropped components with their properties
@@ -32,7 +32,7 @@ Components are defined by type and rendered via `getComponentHTML()`. Each compo
 - Position (x, y) and dimensions (width, height)
 - Type-specific properties in `properties` object
 
-Available component types: label, title, textbox, textarea, datepicker, dropdown, checkbox, radio, button, iconbutton, table, tabs, panel, annotation, notebox
+Available component types: label, title, textbox, textarea, datepicker, dropdown, checkbox, radio, button, iconbutton, table, tabs, panel, annotation, notebox, image
 
 ### Theming
 Six themes available via CSS custom properties: default, aj, metronic, blue, purple, gray. Theme affects table headers, buttons, tabs, inputs, and labels.
@@ -42,17 +42,16 @@ Icon buttons and table action columns support two icon types:
 - **emoji**: Unicode emoji characters
 - **keenicons**: KeenThemes icon font (loaded from `assets/plugins/global/plugins.bundle.css`)
 
+### AI Image Import
+The application can import UI mockups from images using Claude's Vision API:
+- Requires Anthropic API key (stored in localStorage)
+- Analyzes images to extract component structure
+- Converts to designer components automatically
+
 ### Data Persistence
 - **Save**: Exports JSON file containing screen metadata, theme, and component array
 - **Load**: Imports JSON file and restores complete design state
 - **Export PNG**: Uses html2canvas library for image capture
-
-## Directory Structure
-
-- `designer.html` - Main application
-- `assets/plugins/global/` - KeenIcons and global plugin bundles
-- `assets/js/` - Additional JavaScript bundles (scripts, widgets)
-- `AJDesign/`, `Spec/`, `Bug/` - Screenshot/reference image directories
 
 ## Key Functions
 
@@ -63,3 +62,4 @@ Icon buttons and table action columns support two icon types:
 - `saveDesign()` / `loadDesign()` - JSON persistence
 - `exportImage()` - PNG export using html2canvas
 - `changeTheme(theme)` - Applies theme CSS variables
+- `analyzeImageWithClaude()` - AI-powered image to component conversion
