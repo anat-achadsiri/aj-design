@@ -309,6 +309,12 @@
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             padding-bottom: 50px;
             padding-right: 50px;
+            transition: margin 0.2s ease;
+        }
+
+        .canvas.with-rulers {
+            margin-left: 25px;
+            margin-top: 25px;
         }
 
         /* Canvas Resize Handles */
@@ -365,6 +371,184 @@
         .dropped-component.multi-selected {
             outline: 2px solid #8b5cf6;
             outline-offset: 2px;
+        }
+
+        /* Grid Overlay */
+        .grid-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 0;
+            display: none;
+        }
+
+        .grid-overlay.visible {
+            display: block;
+        }
+
+        .grid-overlay.grid-small {
+            background-image:
+                linear-gradient(to right, rgba(200, 200, 200, 0.3) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(200, 200, 200, 0.3) 1px, transparent 1px);
+            background-size: 10px 10px;
+        }
+
+        .grid-overlay.grid-medium {
+            background-image:
+                linear-gradient(to right, rgba(180, 180, 180, 0.4) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(180, 180, 180, 0.4) 1px, transparent 1px),
+                linear-gradient(to right, rgba(200, 200, 200, 0.2) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(200, 200, 200, 0.2) 1px, transparent 1px);
+            background-size: 50px 50px, 50px 50px, 10px 10px, 10px 10px;
+        }
+
+        .grid-overlay.grid-large {
+            background-image:
+                linear-gradient(to right, rgba(150, 150, 150, 0.5) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(150, 150, 150, 0.5) 1px, transparent 1px),
+                linear-gradient(to right, rgba(200, 200, 200, 0.3) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(200, 200, 200, 0.3) 1px, transparent 1px);
+            background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
+        }
+
+        /* Rulers */
+        .ruler {
+            position: absolute;
+            background: #f1f5f9;
+            z-index: 100;
+            display: none;
+        }
+
+        .ruler.visible {
+            display: block;
+        }
+
+        .ruler-horizontal {
+            top: -25px;
+            left: 0;
+            right: 0;
+            height: 25px;
+            border-bottom: 1px solid #cbd5e1;
+        }
+
+        .ruler-vertical {
+            top: 0;
+            left: -25px;
+            bottom: 0;
+            width: 25px;
+            border-right: 1px solid #cbd5e1;
+        }
+
+        .ruler-corner {
+            position: absolute;
+            top: -25px;
+            left: -25px;
+            width: 25px;
+            height: 25px;
+            background: #e2e8f0;
+            border-right: 1px solid #cbd5e1;
+            border-bottom: 1px solid #cbd5e1;
+            z-index: 101;
+            display: none;
+        }
+
+        .ruler-corner.visible {
+            display: block;
+        }
+
+        /* Toolbar toggle button active state */
+        .toolbar-btn.active {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .toolbar-btn.active:hover {
+            background: #2563eb;
+        }
+
+        /* Grid settings dropdown */
+        .grid-settings {
+            position: relative;
+            display: inline-block;
+        }
+
+        .grid-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            padding: 8px;
+            z-index: 1000;
+            display: none;
+            min-width: 180px;
+        }
+
+        .grid-dropdown.visible {
+            display: block;
+        }
+
+        .grid-dropdown label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 8px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .grid-dropdown label:hover {
+            background: #f3f4f6;
+        }
+
+        .grid-dropdown hr {
+            border: none;
+            border-top: 1px solid #e5e7eb;
+            margin: 6px 0;
+        }
+
+        .grid-dropdown .grid-size-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 8px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .grid-dropdown .grid-size-option:hover {
+            background: #f3f4f6;
+        }
+
+        .grid-dropdown .grid-size-option.active {
+            background: #eff6ff;
+            color: #3b82f6;
+        }
+
+        .snap-indicator {
+            position: fixed;
+            background: #3b82f6;
+            z-index: 2000;
+            pointer-events: none;
+        }
+
+        .snap-indicator.horizontal {
+            height: 1px;
+            left: 0;
+            right: 0;
+        }
+
+        .snap-indicator.vertical {
+            width: 1px;
+            top: 0;
+            bottom: 0;
         }
 
         /* Dropped Components */
@@ -1159,11 +1343,46 @@
                     <input type="number" id="canvasHeight" value="800" min="600" step="100" style="width: 70px;" onchange="setCanvasSize()">
                     <button class="toolbar-btn" onclick="fitCanvasToComponents()" title="Fit to components">📐 Fit</button>
                 </div>
+                <div class="toolbar-group grid-settings">
+                    <button class="toolbar-btn" id="gridToggleBtn" onclick="toggleGridDropdown()" title="Grid & Guides">
+                        ⊞ Grid
+                    </button>
+                    <div class="grid-dropdown" id="gridDropdown">
+                        <label>
+                            <input type="checkbox" id="showGridCheck" onchange="toggleGrid()">
+                            Show Grid
+                        </label>
+                        <label>
+                            <input type="checkbox" id="showRulersCheck" onchange="toggleRulers()">
+                            Show Rulers
+                        </label>
+                        <label>
+                            <input type="checkbox" id="snapToGridCheck" onchange="toggleSnapToGrid()">
+                            Snap to Grid
+                        </label>
+                        <hr>
+                        <div class="grid-size-option active" onclick="setGridSize('small')">
+                            <span>▪️</span> Small (10px)
+                        </div>
+                        <div class="grid-size-option" onclick="setGridSize('medium')">
+                            <span>▫️</span> Medium (50px)
+                        </div>
+                        <div class="grid-size-option" onclick="setGridSize('large')">
+                            <span>⬜</span> Large (100px)
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Canvas -->
             <div class="canvas-container">
                 <div class="canvas" id="canvas">
+                    <!-- Grid Overlay -->
+                    <div class="grid-overlay grid-small" id="gridOverlay"></div>
+                    <!-- Rulers -->
+                    <div class="ruler-corner" id="rulerCorner"></div>
+                    <div class="ruler ruler-horizontal" id="rulerHorizontal"></div>
+                    <div class="ruler ruler-vertical" id="rulerVertical"></div>
                     <!-- Dropped components will appear here -->
                     <!-- Marquee Selection -->
                     <div class="marquee-selection" id="marqueeSelection"></div>
@@ -1288,6 +1507,22 @@
         let marqueeStart = { x: 0, y: 0 };
         let marqueeEl = null;
 
+        // Grid and guides settings
+        let gridSettings = {
+            showGrid: false,
+            showRulers: false,
+            snapToGrid: false,
+            gridSize: 'small', // 'small' (10px), 'medium' (50px), 'large' (100px)
+            snapSize: 10 // pixels for snap-to-grid
+        };
+
+        // Grid size mappings
+        const gridSizes = {
+            small: 10,
+            medium: 50,
+            large: 100
+        };
+
         // Theme management
         function changeTheme(theme) {
             currentTheme = theme;
@@ -1316,6 +1551,179 @@
                 'gray': 'Gray'
             };
             return names[theme] || theme;
+        }
+
+        // Grid and Guides Functions
+        function toggleGridDropdown() {
+            const dropdown = document.getElementById('gridDropdown');
+            dropdown.classList.toggle('visible');
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            const gridSettings = document.querySelector('.grid-settings');
+            const dropdown = document.getElementById('gridDropdown');
+            if (gridSettings && !gridSettings.contains(e.target)) {
+                dropdown.classList.remove('visible');
+            }
+        });
+
+        function toggleGrid() {
+            const checkbox = document.getElementById('showGridCheck');
+            gridSettings.showGrid = checkbox.checked;
+            const gridOverlay = document.getElementById('gridOverlay');
+            if (gridSettings.showGrid) {
+                gridOverlay.classList.add('visible');
+                updateGridToggleButton();
+            } else {
+                gridOverlay.classList.remove('visible');
+                updateGridToggleButton();
+            }
+        }
+
+        function toggleRulers() {
+            const checkbox = document.getElementById('showRulersCheck');
+            gridSettings.showRulers = checkbox.checked;
+            const rulerH = document.getElementById('rulerHorizontal');
+            const rulerV = document.getElementById('rulerVertical');
+            const rulerCorner = document.getElementById('rulerCorner');
+            const canvas = document.getElementById('canvas');
+
+            if (gridSettings.showRulers) {
+                rulerH.classList.add('visible');
+                rulerV.classList.add('visible');
+                rulerCorner.classList.add('visible');
+                canvas.classList.add('with-rulers');
+                drawRulers();
+            } else {
+                rulerH.classList.remove('visible');
+                rulerV.classList.remove('visible');
+                rulerCorner.classList.remove('visible');
+                canvas.classList.remove('with-rulers');
+            }
+            updateGridToggleButton();
+        }
+
+        function toggleSnapToGrid() {
+            const checkbox = document.getElementById('snapToGridCheck');
+            gridSettings.snapToGrid = checkbox.checked;
+            updateGridToggleButton();
+            if (gridSettings.snapToGrid) {
+                showToast('Snap to Grid enabled', 'success');
+            }
+        }
+
+        function setGridSize(size) {
+            gridSettings.gridSize = size;
+            gridSettings.snapSize = gridSizes[size];
+
+            const gridOverlay = document.getElementById('gridOverlay');
+            gridOverlay.classList.remove('grid-small', 'grid-medium', 'grid-large');
+            gridOverlay.classList.add(`grid-${size}`);
+
+            // Update active state in dropdown
+            document.querySelectorAll('.grid-size-option').forEach((opt, index) => {
+                const sizes = ['small', 'medium', 'large'];
+                if (sizes[index] === size) {
+                    opt.classList.add('active');
+                } else {
+                    opt.classList.remove('active');
+                }
+            });
+
+            // Redraw rulers if visible
+            if (gridSettings.showRulers) {
+                drawRulers();
+            }
+        }
+
+        function updateGridToggleButton() {
+            const btn = document.getElementById('gridToggleBtn');
+            if (gridSettings.showGrid || gridSettings.showRulers || gridSettings.snapToGrid) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        }
+
+        function drawRulers() {
+            const rulerH = document.getElementById('rulerHorizontal');
+            const rulerV = document.getElementById('rulerVertical');
+            const canvas = document.getElementById('canvas');
+            const canvasWidth = canvas.offsetWidth;
+            const canvasHeight = canvas.offsetHeight;
+            const step = gridSizes[gridSettings.gridSize];
+
+            // Clear existing ruler marks
+            rulerH.innerHTML = '';
+            rulerV.innerHTML = '';
+
+            // Draw horizontal ruler marks
+            for (let x = 0; x <= canvasWidth; x += step) {
+                const mark = document.createElement('div');
+                mark.style.cssText = `
+                    position: absolute;
+                    left: ${x}px;
+                    bottom: 0;
+                    width: 1px;
+                    height: ${x % (step * 5) === 0 ? '12px' : '6px'};
+                    background: #94a3b8;
+                `;
+                rulerH.appendChild(mark);
+
+                // Add number labels at major marks
+                if (x % (step * 5) === 0 && x > 0) {
+                    const label = document.createElement('span');
+                    label.style.cssText = `
+                        position: absolute;
+                        left: ${x}px;
+                        top: 2px;
+                        font-size: 9px;
+                        color: #64748b;
+                        transform: translateX(-50%);
+                    `;
+                    label.textContent = x;
+                    rulerH.appendChild(label);
+                }
+            }
+
+            // Draw vertical ruler marks
+            for (let y = 0; y <= canvasHeight; y += step) {
+                const mark = document.createElement('div');
+                mark.style.cssText = `
+                    position: absolute;
+                    top: ${y}px;
+                    right: 0;
+                    height: 1px;
+                    width: ${y % (step * 5) === 0 ? '12px' : '6px'};
+                    background: #94a3b8;
+                `;
+                rulerV.appendChild(mark);
+
+                // Add number labels at major marks
+                if (y % (step * 5) === 0 && y > 0) {
+                    const label = document.createElement('span');
+                    label.style.cssText = `
+                        position: absolute;
+                        top: ${y}px;
+                        left: 2px;
+                        font-size: 9px;
+                        color: #64748b;
+                        transform: translateY(-50%);
+                        writing-mode: vertical-rl;
+                        text-orientation: mixed;
+                    `;
+                    label.textContent = y;
+                    rulerV.appendChild(label);
+                }
+            }
+        }
+
+        // Snap position to grid
+        function snapToGrid(value) {
+            if (!gridSettings.snapToGrid) return value;
+            const snapSize = gridSettings.snapSize;
+            return Math.round(value / snapSize) * snapSize;
         }
 
         // Canvas setup
@@ -1507,8 +1915,8 @@
             const component = {
                 id,
                 type,
-                x,
-                y,
+                x: snapToGrid(x),
+                y: snapToGrid(y),
                 width: getDefaultWidth(type),
                 height: getDefaultHeight(type),
                 properties: getDefaultProperties(type)
@@ -1910,10 +2318,12 @@
                 const dy = e.clientY - resizeStart.y;
 
                 if (resizeHandle.includes('e')) {
-                    comp.width = Math.max(50, resizeStart.width + dx);
+                    let newWidth = Math.max(50, resizeStart.width + dx);
+                    comp.width = snapToGrid(newWidth);
                 }
                 if (resizeHandle.includes('s')) {
-                    comp.height = Math.max(30, resizeStart.height + dy);
+                    let newHeight = Math.max(30, resizeStart.height + dy);
+                    comp.height = snapToGrid(newHeight);
                 }
 
                 updateComponentElement(comp);
@@ -2033,8 +2443,12 @@
                     const currentY = moveE.clientY - canvasRect.top;
 
                     multiDragOffsets.forEach(item => {
-                        item.comp.x = Math.max(0, currentX + item.offsetX);
-                        item.comp.y = Math.max(0, currentY + item.offsetY);
+                        let newX = Math.max(0, currentX + item.offsetX);
+                        let newY = Math.max(0, currentY + item.offsetY);
+
+                        // Apply snap to grid
+                        item.comp.x = snapToGrid(newX);
+                        item.comp.y = snapToGrid(newY);
 
                         const compEl = document.getElementById(item.comp.id);
                         if (compEl) {
@@ -2070,12 +2484,16 @@
                     if (!isDragging) return;
 
                     const canvasRect = canvas.getBoundingClientRect();
-                    comp.x = moveE.clientX - canvasRect.left - dragOffset.x;
-                    comp.y = moveE.clientY - canvasRect.top - dragOffset.y;
+                    let newX = moveE.clientX - canvasRect.left - dragOffset.x;
+                    let newY = moveE.clientY - canvasRect.top - dragOffset.y;
 
                     // Keep minimum bounds (allow expansion to the right and bottom)
-                    comp.x = Math.max(0, comp.x);
-                    comp.y = Math.max(0, comp.y);
+                    newX = Math.max(0, newX);
+                    newY = Math.max(0, newY);
+
+                    // Apply snap to grid
+                    comp.x = snapToGrid(newX);
+                    comp.y = snapToGrid(newY);
 
                     el.style.left = comp.x + 'px';
                     el.style.top = comp.y + 'px';
@@ -2705,6 +3123,11 @@
             canvas.style.minWidth = Math.max(400, width) + 'px';
             canvas.style.minHeight = Math.max(300, height) + 'px';
 
+            // Redraw rulers if visible
+            if (gridSettings.showRulers) {
+                setTimeout(drawRulers, 0);
+            }
+
             if (showMessage) {
                 showToast(`Canvas size: ${width} x ${height}`, 'success');
             }
@@ -2760,6 +3183,10 @@
             document.addEventListener('mouseup', () => {
                 if (isResizingCanvas) {
                     isResizingCanvas = false;
+                    // Redraw rulers if visible
+                    if (gridSettings.showRulers) {
+                        drawRulers();
+                    }
                 }
             });
         }
@@ -2880,6 +3307,22 @@
                 const selectedComponents = canvas.querySelectorAll('.dropped-component.selected');
                 const allComponents = canvas.querySelectorAll('.dropped-component');
 
+                // Hide grid and rulers
+                const gridOverlay = document.getElementById('gridOverlay');
+                const rulerH = document.getElementById('rulerHorizontal');
+                const rulerV = document.getElementById('rulerVertical');
+                const rulerCorner = document.getElementById('rulerCorner');
+                const marqueeEl = document.getElementById('marqueeSelection');
+
+                const gridWasVisible = gridOverlay.classList.contains('visible');
+                const rulersWereVisible = rulerH.classList.contains('visible');
+
+                gridOverlay.classList.remove('visible');
+                rulerH.classList.remove('visible');
+                rulerV.classList.remove('visible');
+                rulerCorner.classList.remove('visible');
+                marqueeEl.style.display = 'none';
+
                 // Store original states and hide handles
                 resizeHandles.forEach(h => h.style.display = 'none');
                 canvasResizeHandles.forEach(h => h.style.display = 'none');
@@ -2893,6 +3336,10 @@
                 // Also hide the dashed border of canvas
                 const originalBorder = canvas.style.border;
                 canvas.style.border = '1px solid #e2e8f0';
+
+                // Remove rulers margin temporarily
+                const hadRulersClass = canvas.classList.contains('with-rulers');
+                canvas.classList.remove('with-rulers');
 
                 html2canvas(canvas, {
                     backgroundColor: '#ffffff',
@@ -2915,6 +3362,20 @@
 
                     // Restore canvas border
                     canvas.style.border = originalBorder;
+
+                    // Restore grid and rulers if they were visible
+                    if (gridWasVisible) {
+                        gridOverlay.classList.add('visible');
+                    }
+                    if (rulersWereVisible) {
+                        rulerH.classList.add('visible');
+                        rulerV.classList.add('visible');
+                        rulerCorner.classList.add('visible');
+                    }
+                    if (hadRulersClass) {
+                        canvas.classList.add('with-rulers');
+                    }
+                    marqueeEl.style.display = '';
 
                     showToast('PNG exported successfully!', 'success');
                 });
