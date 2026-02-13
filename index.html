@@ -243,13 +243,15 @@
         .toolbar-btn {
             display: flex;
             align-items: center;
-            gap: 6px;
-            padding: 8px 12px;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            padding: 0;
             border: 1px solid #e2e8f0;
             background: white;
             border-radius: 6px;
             cursor: pointer;
-            font-size: 13px;
+            font-size: 18px;
             color: #475569;
             transition: all 0.2s;
         }
@@ -1191,6 +1193,168 @@
                 opacity: 1;
             }
         }
+
+        /* Document Tabs Bar */
+        .document-tabs-bar {
+            display: flex;
+            align-items: center;
+            background: #1e293b;
+            border-bottom: 1px solid #334155;
+            min-height: 36px;
+            padding: 0 8px;
+            gap: 2px;
+        }
+
+        .document-tabs-container {
+            display: flex;
+            align-items: center;
+            flex: 1;
+            overflow-x: auto;
+            gap: 2px;
+        }
+
+        .document-tabs-container::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .document-tabs-container::-webkit-scrollbar-track {
+            background: #334155;
+        }
+
+        .document-tabs-container::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 2px;
+        }
+
+        .document-tab {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: #334155;
+            border-radius: 4px 4px 0 0;
+            cursor: pointer;
+            font-size: 13px;
+            color: #94a3b8;
+            white-space: nowrap;
+            transition: all 0.15s;
+            max-width: 180px;
+            border: 1px solid transparent;
+            border-bottom: none;
+            margin-bottom: -1px;
+        }
+
+        .document-tab:hover {
+            background: #475569;
+            color: #e2e8f0;
+        }
+
+        .document-tab.active {
+            background: #f0f2f5;
+            color: #1e293b;
+            border-color: #334155;
+        }
+
+        .document-tab .tab-title {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+        }
+
+        .document-tab .tab-dirty {
+            color: #fbbf24;
+            font-weight: bold;
+        }
+
+        .document-tab.active .tab-dirty {
+            color: #d97706;
+        }
+
+        .document-tab .tab-close {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            border-radius: 3px;
+            font-size: 14px;
+            opacity: 0.6;
+            transition: all 0.15s;
+        }
+
+        .document-tab .tab-close:hover {
+            background: rgba(0,0,0,0.2);
+            opacity: 1;
+        }
+
+        .document-tab.active .tab-close:hover {
+            background: #e2e8f0;
+        }
+
+        .document-tabs-actions {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding-left: 8px;
+            border-left: 1px solid #334155;
+            margin-left: 4px;
+        }
+
+        .doc-action-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: transparent;
+            color: #94a3b8;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.15s;
+        }
+
+        .doc-action-btn:hover {
+            background: #475569;
+            color: #e2e8f0;
+        }
+
+        /* Unsaved Changes Modal */
+        .modal.unsaved-modal {
+            width: 400px;
+        }
+
+        .unsaved-modal .modal-body {
+            text-align: center;
+            padding: 24px 20px;
+        }
+
+        .unsaved-modal .unsaved-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .unsaved-modal .unsaved-message {
+            font-size: 15px;
+            color: #475569;
+            margin-bottom: 8px;
+        }
+
+        .unsaved-modal .unsaved-filename {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 16px;
+        }
+
+        .unsaved-modal .modal-footer {
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .unsaved-modal .modal-footer .toolbar-btn {
+            min-width: 100px;
+        }
     </style>
 </head>
 <body>
@@ -1292,85 +1456,34 @@
 
         <!-- Main Area -->
         <div class="main-area">
+            <!-- Document Tabs Bar -->
+            <div class="document-tabs-bar">
+                <div class="document-tabs-container" id="documentTabs">
+                    <!-- Tabs will be rendered here -->
+                </div>
+                <div class="document-tabs-actions">
+                    <button class="doc-action-btn" onclick="newDocument()" title="New Document (Ctrl+N)">+</button>
+                </div>
+            </div>
+
             <!-- Toolbar -->
             <div class="toolbar">
                 <div class="toolbar-group">
-                    <input type="text" class="screen-name-input" id="screenName" placeholder="Screen ID: sc-xxx" value="sc-pd001">
-                    <input type="text" class="screen-name-input" id="screenTitle" placeholder="Screen Title" value="หน้าจอใหม่">
+                    <button class="toolbar-btn" id="toggleRulersBtn" onclick="toggleRulersFromToolbar()" title="Show Rulers">📏</button>
                 </div>
                 <div class="toolbar-group">
-                    <button class="toolbar-btn" onclick="saveDesign()">
-                        💾 Save JSON
-                    </button>
-                    <button class="toolbar-btn" onclick="loadDesign()">
-                        📂 Load JSON
-                    </button>
-                    <button class="toolbar-btn" onclick="exportImage()">
-                        🖼️ Export PNG
-                    </button>
-                    <button class="toolbar-btn primary" onclick="showImportImageModal()">
-                        🤖 Import from Image
-                    </button>
+                    <button class="toolbar-btn" onclick="docSave()" title="Save (Ctrl+S)">💾</button>
+                    <button class="toolbar-btn" onclick="docSaveAs()" title="Save As">📄</button>
+                    <button class="toolbar-btn" onclick="docOpen()" title="Open (Ctrl+O)">📂</button>
+                    <button class="toolbar-btn" onclick="exportImage()" title="Export PNG">🖼️</button>
+                    <button class="toolbar-btn primary" onclick="showImportImageModal()" title="Import from Image">🤖</button>
                 </div>
                 <div class="toolbar-group">
-                    <button class="toolbar-btn" onclick="undo()">
-                        ↩ Undo
-                    </button>
-                    <button class="toolbar-btn" onclick="redo()">
-                        ↪ Redo
-                    </button>
+                    <button class="toolbar-btn" onclick="undo()" title="Undo (Ctrl+Z)">↩️</button>
+                    <button class="toolbar-btn" onclick="redo()" title="Redo (Ctrl+Y)">↪️</button>
                 </div>
                 <div class="toolbar-group">
-                    <button class="toolbar-btn danger" onclick="clearCanvas()">
-                        🗑️ Clear All
-                    </button>
-                </div>
-                <div class="toolbar-group theme-selector">
-                    <label>Theme:</label>
-                    <select id="themeSelect" onchange="changeTheme(this.value)">
-                        <option value="default">Default</option>
-                        <option value="aj">AJ Style (Teal)</option>
-                        <option value="metronic">Metronic (KeenThemes)</option>
-                        <option value="blue">Blue</option>
-                        <option value="purple">Purple</option>
-                        <option value="gray">Gray</option>
-                    </select>
-                </div>
-                <div class="toolbar-group canvas-size-controls">
-                    <label>Canvas:</label>
-                    <input type="number" id="canvasWidth" value="1200" min="800" step="100" style="width: 70px;" onchange="setCanvasSize()">
-                    <span>x</span>
-                    <input type="number" id="canvasHeight" value="800" min="600" step="100" style="width: 70px;" onchange="setCanvasSize()">
-                    <button class="toolbar-btn" onclick="fitCanvasToComponents()" title="Fit to components">📐 Fit</button>
-                </div>
-                <div class="toolbar-group grid-settings">
-                    <button class="toolbar-btn" id="gridToggleBtn" onclick="toggleGridDropdown()" title="Grid & Guides">
-                        ⊞ Grid
-                    </button>
-                    <div class="grid-dropdown" id="gridDropdown">
-                        <label>
-                            <input type="checkbox" id="showGridCheck" onchange="toggleGrid()">
-                            Show Grid
-                        </label>
-                        <label>
-                            <input type="checkbox" id="showRulersCheck" onchange="toggleRulers()">
-                            Show Rulers
-                        </label>
-                        <label>
-                            <input type="checkbox" id="snapToGridCheck" onchange="toggleSnapToGrid()">
-                            Snap to Grid
-                        </label>
-                        <hr>
-                        <div class="grid-size-option active" onclick="setGridSize('small')">
-                            <span>▪️</span> Small (10px)
-                        </div>
-                        <div class="grid-size-option" onclick="setGridSize('medium')">
-                            <span>▫️</span> Medium (50px)
-                        </div>
-                        <div class="grid-size-option" onclick="setGridSize('large')">
-                            <span>⬜</span> Large (100px)
-                        </div>
-                    </div>
+                    <button class="toolbar-btn danger" onclick="clearCanvas()" title="Clear All">🗑️</button>
                 </div>
             </div>
 
@@ -1419,6 +1532,12 @@
             🗑️ Delete (Del)
         </div>
     </div>
+
+    <!-- Hidden canvas/screen settings (used by JavaScript) -->
+    <input type="hidden" id="canvasWidthHidden" value="1200">
+    <input type="hidden" id="canvasHeightHidden" value="800">
+    <input type="hidden" id="screenNameHidden" value="sc-new">
+    <input type="hidden" id="screenTitleHidden" value="หน้าจอใหม่">
 
     <!-- Hidden file input for loading JSON -->
     <input type="file" id="fileInput" accept=".json" style="display: none;">
@@ -1469,6 +1588,26 @@
         </div>
     </div>
 
+    <!-- Unsaved Changes Modal -->
+    <div class="modal-overlay hidden" id="unsavedChangesModal">
+        <div class="modal unsaved-modal">
+            <div class="modal-header">
+                <span>Save Changes?</span>
+                <button class="modal-close" onclick="closeUnsavedModal('cancel')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="unsaved-icon">📄</div>
+                <div class="unsaved-message">Do you want to save changes to</div>
+                <div class="unsaved-filename" id="unsavedFileName">Untitled</div>
+            </div>
+            <div class="modal-footer">
+                <button class="toolbar-btn" onclick="closeUnsavedModal('dontsave')">Don't Save</button>
+                <button class="toolbar-btn" onclick="closeUnsavedModal('cancel')">Cancel</button>
+                <button class="toolbar-btn primary" onclick="closeUnsavedModal('save')">Save</button>
+            </div>
+        </div>
+    </div>
+
     <style>
         .spinner {
             width: 20px;
@@ -1510,7 +1649,7 @@
         // Grid and guides settings
         let gridSettings = {
             showGrid: false,
-            showRulers: false,
+            showRulers: true,
             snapToGrid: false,
             gridSize: 'small', // 'small' (10px), 'medium' (50px), 'large' (100px)
             snapSize: 10 // pixels for snap-to-grid
@@ -1523,8 +1662,483 @@
             large: 100
         };
 
+        // ============================================
+        // Document Management System
+        // ============================================
+
+        // Document model
+        class Document {
+            constructor(id = null) {
+                this.id = id || this.generateId();
+                this.filePath = null; // null = never saved
+                this.displayName = 'Untitled';
+                this.isDirty = false;
+                this.content = {
+                    screenId: 'sc-new',
+                    screenTitle: 'หน้าจอใหม่',
+                    theme: 'default',
+                    canvasWidth: 1200,
+                    canvasHeight: 800,
+                    components: [],
+                    version: '1.0'
+                };
+                this.history = [];
+                this.historyIndex = -1;
+                this.componentIdCounter = 1;
+            }
+
+            generateId() {
+                return 'doc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            }
+
+            getTabTitle() {
+                return this.displayName + (this.isDirty ? '*' : '');
+            }
+        }
+
+        // Document state
+        let documents = [];
+        let activeDocumentId = null;
+        let untitledCounter = 1;
+        let pendingUnsavedAction = null; // { action: 'close'|'switch', docId, targetDocId }
+
+        // Get active document
+        function getActiveDocument() {
+            return documents.find(d => d.id === activeDocumentId);
+        }
+
+        // Generate unique untitled name
+        function generateUntitledName() {
+            const name = untitledCounter === 1 ? 'Untitled' : `Untitled ${untitledCounter}`;
+            untitledCounter++;
+            return name;
+        }
+
+        // Calculate default canvas size based on visible area
+        function getDefaultCanvasSize() {
+            const container = document.querySelector('.canvas-container');
+            if (!container) return { width: 1200, height: 800 };
+
+            const containerRect = container.getBoundingClientRect();
+            // Account for ruler space (30px) and some padding (40px)
+            const rulerSpace = 30;
+            const padding = 40;
+
+            let width = Math.floor(containerRect.width - rulerSpace - padding);
+            let height = Math.floor(containerRect.height - rulerSpace - padding);
+
+            // Round to nearest 50 for cleaner values
+            width = Math.floor(width / 50) * 50;
+            height = Math.floor(height / 50) * 50;
+
+            // Ensure minimum size
+            width = Math.max(400, Math.min(width, 1200));
+            height = Math.max(300, Math.min(height, 800));
+
+            return { width, height };
+        }
+
+        // Create new document
+        function newDocument() {
+            const doc = new Document();
+            doc.displayName = generateUntitledName();
+            doc.content.screenId = 'sc-new';
+            doc.content.screenTitle = doc.displayName;
+
+            // Set canvas size to fit visible area
+            const defaultSize = getDefaultCanvasSize();
+            doc.content.canvasWidth = defaultSize.width;
+            doc.content.canvasHeight = defaultSize.height;
+
+            documents.push(doc);
+            switchToDocument(doc.id);
+            renderDocumentTabs();
+            showToast('New document created', 'success');
+        }
+
+        // Switch to a document
+        function switchToDocument(docId) {
+            const doc = documents.find(d => d.id === docId);
+            if (!doc) return;
+
+            // Save current document state if exists
+            const currentDoc = getActiveDocument();
+            if (currentDoc) {
+                saveDocumentState(currentDoc);
+            }
+
+            // Switch active document
+            activeDocumentId = docId;
+
+            // Load document state
+            loadDocumentState(doc);
+            renderDocumentTabs();
+        }
+
+        // Save current canvas state to document
+        function saveDocumentState(doc) {
+            doc.content.screenId = getScreenName();
+            doc.content.screenTitle = getScreenTitle();
+            doc.content.theme = currentTheme;
+            doc.content.canvasWidth = getCanvasWidth();
+            doc.content.canvasHeight = getCanvasHeight();
+            doc.content.components = JSON.parse(JSON.stringify(components));
+            doc.history = JSON.parse(JSON.stringify(history));
+            doc.historyIndex = historyIndex;
+            doc.componentIdCounter = componentIdCounter;
+        }
+
+        // Load document state to canvas
+        function loadDocumentState(doc) {
+            setScreenNameValue(doc.content.screenId || 'sc-new');
+            setScreenTitleValue(doc.content.screenTitle || 'หน้าจอใหม่');
+
+            // Load theme
+            currentTheme = doc.content.theme || 'default';
+            const themeSelect = document.getElementById('themeSelect');
+            if (themeSelect) themeSelect.value = currentTheme;
+            if (currentTheme === 'default') {
+                document.documentElement.removeAttribute('data-theme');
+                document.getElementById('canvas').removeAttribute('data-theme');
+            } else {
+                document.documentElement.setAttribute('data-theme', currentTheme);
+                document.getElementById('canvas').setAttribute('data-theme', currentTheme);
+            }
+
+            // Load canvas size
+            setCanvasWidthValue(doc.content.canvasWidth || 1200);
+            setCanvasHeightValue(doc.content.canvasHeight || 800);
+
+            // Load components
+            components = JSON.parse(JSON.stringify(doc.content.components || []));
+            history = JSON.parse(JSON.stringify(doc.history || []));
+            historyIndex = doc.historyIndex;
+            componentIdCounter = doc.componentIdCounter || 1;
+
+            // Re-render canvas
+            rerenderCanvas();
+            setCanvasSize(false);
+
+            // Show canvas properties if no component selected
+            showCanvasProperties();
+
+            // Initialize history for new documents
+            if (history.length === 0) {
+                historyIndex = -1;
+                saveHistory(true); // Skip marking as dirty
+            }
+        }
+
+        // Mark document as dirty
+        function markDocumentDirty() {
+            const doc = getActiveDocument();
+            if (doc && !doc.isDirty) {
+                doc.isDirty = true;
+                renderDocumentTabs();
+            }
+        }
+
+        // Mark document as clean
+        function markDocumentClean() {
+            const doc = getActiveDocument();
+            if (doc) {
+                doc.isDirty = false;
+                renderDocumentTabs();
+            }
+        }
+
+        // Render document tabs
+        function renderDocumentTabs() {
+            const container = document.getElementById('documentTabs');
+            container.innerHTML = '';
+
+            documents.forEach(doc => {
+                const tab = document.createElement('div');
+                tab.className = 'document-tab' + (doc.id === activeDocumentId ? ' active' : '');
+                tab.onclick = (e) => {
+                    if (!e.target.classList.contains('tab-close')) {
+                        handleTabClick(doc.id);
+                    }
+                };
+
+                const titleSpan = document.createElement('span');
+                titleSpan.className = 'tab-title';
+                titleSpan.textContent = doc.displayName;
+
+                const dirtySpan = document.createElement('span');
+                dirtySpan.className = 'tab-dirty';
+                dirtySpan.textContent = doc.isDirty ? '*' : '';
+
+                const closeBtn = document.createElement('span');
+                closeBtn.className = 'tab-close';
+                closeBtn.textContent = '×';
+                closeBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    closeDocument(doc.id);
+                };
+
+                tab.appendChild(titleSpan);
+                tab.appendChild(dirtySpan);
+                tab.appendChild(closeBtn);
+                container.appendChild(tab);
+            });
+
+            // Update page title
+            const activeDoc = getActiveDocument();
+            if (activeDoc) {
+                document.title = activeDoc.getTabTitle() + ' - SA Screen Designer';
+            }
+        }
+
+        // Handle tab click
+        function handleTabClick(docId) {
+            if (docId === activeDocumentId) return;
+
+            const currentDoc = getActiveDocument();
+            if (currentDoc && currentDoc.isDirty) {
+                pendingUnsavedAction = { action: 'switch', docId: currentDoc.id, targetDocId: docId };
+                showUnsavedModal(currentDoc.displayName);
+            } else {
+                switchToDocument(docId);
+            }
+        }
+
+        // Close document
+        function closeDocument(docId) {
+            const doc = documents.find(d => d.id === docId);
+            if (!doc) return;
+
+            if (doc.isDirty) {
+                pendingUnsavedAction = { action: 'close', docId: docId };
+                showUnsavedModal(doc.displayName);
+            } else {
+                performCloseDocument(docId);
+            }
+        }
+
+        // Actually close the document
+        function performCloseDocument(docId) {
+            const index = documents.findIndex(d => d.id === docId);
+            if (index === -1) return;
+
+            documents.splice(index, 1);
+
+            // If no documents left, create new one
+            if (documents.length === 0) {
+                newDocument();
+                return;
+            }
+
+            // If closed active document, switch to another
+            if (docId === activeDocumentId) {
+                const newIndex = Math.min(index, documents.length - 1);
+                switchToDocument(documents[newIndex].id);
+            } else {
+                renderDocumentTabs();
+            }
+        }
+
+        // Show unsaved changes modal
+        function showUnsavedModal(fileName) {
+            document.getElementById('unsavedFileName').textContent = fileName;
+            document.getElementById('unsavedChangesModal').classList.remove('hidden');
+        }
+
+        // Close unsaved modal
+        function closeUnsavedModal(action) {
+            document.getElementById('unsavedChangesModal').classList.add('hidden');
+
+            if (!pendingUnsavedAction) return;
+
+            const { action: pendingAction, docId, targetDocId } = pendingUnsavedAction;
+            pendingUnsavedAction = null;
+
+            if (action === 'cancel') {
+                return;
+            }
+
+            if (action === 'save') {
+                // Save first, then continue
+                const doc = documents.find(d => d.id === docId);
+                if (doc) {
+                    if (doc.filePath) {
+                        // Has file path, save directly
+                        saveDocumentToFile(doc, () => {
+                            continuePendingAction(pendingAction, docId, targetDocId);
+                        });
+                    } else {
+                        // No file path, show save dialog
+                        docSaveAsForDocument(doc, () => {
+                            continuePendingAction(pendingAction, docId, targetDocId);
+                        });
+                    }
+                }
+            } else if (action === 'dontsave') {
+                // Don't save, just continue
+                const doc = documents.find(d => d.id === docId);
+                if (doc) {
+                    doc.isDirty = false;
+                }
+                continuePendingAction(pendingAction, docId, targetDocId);
+            }
+        }
+
+        // Continue pending action after save decision
+        function continuePendingAction(action, docId, targetDocId) {
+            if (action === 'close') {
+                performCloseDocument(docId);
+            } else if (action === 'switch') {
+                switchToDocument(targetDocId);
+            }
+        }
+
+        // Save - if no filePath, do Save As
+        function docSave() {
+            const doc = getActiveDocument();
+            if (!doc) return;
+
+            // Save current state first
+            saveDocumentState(doc);
+
+            if (doc.filePath) {
+                // Has file path, save directly (actually re-download with same name)
+                saveDocumentToFile(doc);
+            } else {
+                // No file path, do Save As
+                docSaveAs();
+            }
+        }
+
+        // Save As - always ask for name
+        function docSaveAs() {
+            const doc = getActiveDocument();
+            if (!doc) return;
+
+            saveDocumentState(doc);
+            docSaveAsForDocument(doc);
+        }
+
+        // Save As for specific document
+        function docSaveAsForDocument(doc, callback) {
+            const design = {
+                screenId: doc.content.screenId,
+                screenTitle: doc.content.screenTitle,
+                theme: doc.content.theme,
+                canvasWidth: doc.content.canvasWidth,
+                canvasHeight: doc.content.canvasHeight,
+                components: doc.content.components,
+                version: '1.0',
+                createdAt: new Date().toISOString()
+            };
+
+            const json = JSON.stringify(design, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+
+            const fileName = (doc.content.screenId || 'screen') + '.json';
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            a.click();
+
+            URL.revokeObjectURL(url);
+
+            // Update document info
+            doc.filePath = fileName; // We can't get actual path in browser, use filename
+            doc.displayName = fileName.replace('.json', '');
+            doc.isDirty = false;
+            renderDocumentTabs();
+
+            showToast('Design saved: ' + fileName, 'success');
+
+            if (callback) callback();
+        }
+
+        // Save document to file (download)
+        function saveDocumentToFile(doc, callback) {
+            const design = {
+                screenId: doc.content.screenId,
+                screenTitle: doc.content.screenTitle,
+                theme: doc.content.theme,
+                canvasWidth: doc.content.canvasWidth,
+                canvasHeight: doc.content.canvasHeight,
+                components: doc.content.components,
+                version: '1.0',
+                createdAt: new Date().toISOString()
+            };
+
+            const json = JSON.stringify(design, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = doc.filePath || (doc.content.screenId || 'screen') + '.json';
+            a.click();
+
+            URL.revokeObjectURL(url);
+
+            doc.isDirty = false;
+            renderDocumentTabs();
+
+            showToast('Design saved!', 'success');
+
+            if (callback) callback();
+        }
+
+        // Open document
+        function docOpen() {
+            document.getElementById('fileInput').click();
+        }
+
+        // Handle file input change for opening
+        function handleFileOpen(file) {
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const design = JSON.parse(e.target.result);
+
+                    // Create new document
+                    const doc = new Document();
+                    doc.filePath = file.name;
+                    doc.displayName = file.name.replace('.json', '');
+                    doc.content.screenId = design.screenId || '';
+                    doc.content.screenTitle = design.screenTitle || '';
+                    doc.content.theme = design.theme || 'default';
+                    doc.content.canvasWidth = design.canvasWidth || 1200;
+                    doc.content.canvasHeight = design.canvasHeight || 800;
+                    doc.content.components = design.components || [];
+                    doc.isDirty = false;
+
+                    // Find max component ID
+                    doc.componentIdCounter = 1;
+                    doc.content.components.forEach(c => {
+                        const num = parseInt(c.id.replace('comp_', ''));
+                        if (num >= doc.componentIdCounter) doc.componentIdCounter = num + 1;
+                    });
+
+                    documents.push(doc);
+                    switchToDocument(doc.id);
+                    renderDocumentTabs();
+
+                    showToast('Document opened: ' + file.name, 'success');
+                } catch (err) {
+                    showToast('Error loading file: ' + err.message, 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Initialize with first document
+        function initDocumentSystem() {
+            newDocument();
+        }
+
         // Theme management
-        function changeTheme(theme) {
+        function changeTheme(theme, skipDirty = false) {
             currentTheme = theme;
             if (theme === 'default') {
                 document.documentElement.removeAttribute('data-theme');
@@ -1539,6 +2153,11 @@
                 canvas.setAttribute('data-theme', theme);
             }
             showToast(`Theme changed to: ${getThemeName(theme)}`, 'success');
+
+            // Mark document as dirty
+            if (!skipDirty) {
+                markDocumentDirty();
+            }
         }
 
         function getThemeName(theme) {
@@ -1554,36 +2173,20 @@
         }
 
         // Grid and Guides Functions
-        function toggleGridDropdown() {
-            const dropdown = document.getElementById('gridDropdown');
-            dropdown.classList.toggle('visible');
-        }
-
-        // Close dropdown when clicking outside
-        document.addEventListener('click', (e) => {
-            const gridSettings = document.querySelector('.grid-settings');
-            const dropdown = document.getElementById('gridDropdown');
-            if (gridSettings && !gridSettings.contains(e.target)) {
-                dropdown.classList.remove('visible');
-            }
-        });
-
         function toggleGrid() {
             const checkbox = document.getElementById('showGridCheck');
-            gridSettings.showGrid = checkbox.checked;
+            if (checkbox) gridSettings.showGrid = checkbox.checked;
             const gridOverlay = document.getElementById('gridOverlay');
             if (gridSettings.showGrid) {
                 gridOverlay.classList.add('visible');
-                updateGridToggleButton();
             } else {
                 gridOverlay.classList.remove('visible');
-                updateGridToggleButton();
             }
         }
 
         function toggleRulers() {
             const checkbox = document.getElementById('showRulersCheck');
-            gridSettings.showRulers = checkbox.checked;
+            if (checkbox) gridSettings.showRulers = checkbox.checked;
             const rulerH = document.getElementById('rulerHorizontal');
             const rulerV = document.getElementById('rulerVertical');
             const rulerCorner = document.getElementById('rulerCorner');
@@ -1601,13 +2204,30 @@
                 rulerCorner.classList.remove('visible');
                 canvas.classList.remove('with-rulers');
             }
-            updateGridToggleButton();
+            updateRulerButtonState();
+        }
+
+        function toggleRulersFromToolbar() {
+            gridSettings.showRulers = !gridSettings.showRulers;
+            const checkbox = document.getElementById('showRulersCheck');
+            if (checkbox) checkbox.checked = gridSettings.showRulers;
+            toggleRulers();
+        }
+
+        function updateRulerButtonState() {
+            const btn = document.getElementById('toggleRulersBtn');
+            if (btn) {
+                if (gridSettings.showRulers) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            }
         }
 
         function toggleSnapToGrid() {
             const checkbox = document.getElementById('snapToGridCheck');
-            gridSettings.snapToGrid = checkbox.checked;
-            updateGridToggleButton();
+            if (checkbox) gridSettings.snapToGrid = checkbox.checked;
             if (gridSettings.snapToGrid) {
                 showToast('Snap to Grid enabled', 'success');
             }
@@ -1621,28 +2241,9 @@
             gridOverlay.classList.remove('grid-small', 'grid-medium', 'grid-large');
             gridOverlay.classList.add(`grid-${size}`);
 
-            // Update active state in dropdown
-            document.querySelectorAll('.grid-size-option').forEach((opt, index) => {
-                const sizes = ['small', 'medium', 'large'];
-                if (sizes[index] === size) {
-                    opt.classList.add('active');
-                } else {
-                    opt.classList.remove('active');
-                }
-            });
-
             // Redraw rulers if visible
             if (gridSettings.showRulers) {
                 drawRulers();
-            }
-        }
-
-        function updateGridToggleButton() {
-            const btn = document.getElementById('gridToggleBtn');
-            if (gridSettings.showGrid || gridSettings.showRulers || gridSettings.snapToGrid) {
-                btn.classList.add('active');
-            } else {
-                btn.classList.remove('active');
             }
         }
 
@@ -2515,10 +3116,159 @@
             }
         }
 
+        // Get/Set canvas size from hidden inputs
+        function getCanvasWidth() {
+            return parseInt(document.getElementById('canvasWidthHidden').value) || 1200;
+        }
+
+        function getCanvasHeight() {
+            return parseInt(document.getElementById('canvasHeightHidden').value) || 800;
+        }
+
+        function setCanvasWidthValue(val) {
+            document.getElementById('canvasWidthHidden').value = val;
+            const visibleInput = document.getElementById('canvasWidthVisible');
+            if (visibleInput) visibleInput.value = val;
+        }
+
+        function setCanvasHeightValue(val) {
+            document.getElementById('canvasHeightHidden').value = val;
+            const visibleInput = document.getElementById('canvasHeightVisible');
+            if (visibleInput) visibleInput.value = val;
+        }
+
+        // Get/Set screen name and title from hidden inputs
+        function getScreenName() {
+            return document.getElementById('screenNameHidden').value || 'sc-new';
+        }
+
+        function getScreenTitle() {
+            return document.getElementById('screenTitleHidden').value || 'หน้าจอใหม่';
+        }
+
+        function setScreenNameValue(val) {
+            document.getElementById('screenNameHidden').value = val;
+            const visibleInput = document.getElementById('screenNameVisible');
+            if (visibleInput) visibleInput.value = val;
+        }
+
+        function setScreenTitleValue(val) {
+            document.getElementById('screenTitleHidden').value = val;
+            const visibleInput = document.getElementById('screenTitleVisible');
+            if (visibleInput) visibleInput.value = val;
+        }
+
+        // Show canvas properties
+        function showCanvasProperties() {
+            const canvasWidth = getCanvasWidth();
+            const canvasHeight = getCanvasHeight();
+            const screenName = getScreenName();
+            const screenTitle = getScreenTitle();
+
+            let html = `
+                <div class="property-group" style="margin-bottom: 12px;">
+                    <div style="font-size: 14px; font-weight: 600; color: #1e293b; margin-bottom: 12px;">
+                        📋 Screen Info
+                    </div>
+                </div>
+                <div class="property-group">
+                    <label>Screen ID</label>
+                    <input type="text" id="screenNameVisible" value="${screenName}" placeholder="sc-xxx" oninput="updateScreenInfo()">
+                </div>
+                <div class="property-group">
+                    <label>Screen Title</label>
+                    <input type="text" id="screenTitleVisible" value="${screenTitle}" placeholder="Screen Title" oninput="updateScreenInfo()">
+                </div>
+                <hr style="margin: 16px 0; border: none; border-top: 1px solid #e2e8f0;">
+                <div class="property-group" style="margin-bottom: 12px;">
+                    <div style="font-size: 14px; font-weight: 600; color: #1e293b; margin-bottom: 12px;">
+                        🖼️ Canvas
+                    </div>
+                </div>
+                <div class="property-group">
+                    <label>Theme</label>
+                    <select id="themeSelect" onchange="changeTheme(this.value)">
+                        <option value="default" ${currentTheme === 'default' ? 'selected' : ''}>Default</option>
+                        <option value="aj" ${currentTheme === 'aj' ? 'selected' : ''}>AJ Style (Teal)</option>
+                        <option value="metronic" ${currentTheme === 'metronic' ? 'selected' : ''}>Metronic (KeenThemes)</option>
+                        <option value="blue" ${currentTheme === 'blue' ? 'selected' : ''}>Blue</option>
+                        <option value="purple" ${currentTheme === 'purple' ? 'selected' : ''}>Purple</option>
+                        <option value="gray" ${currentTheme === 'gray' ? 'selected' : ''}>Gray</option>
+                    </select>
+                </div>
+                <div class="property-row">
+                    <div class="property-group">
+                        <label>Width</label>
+                        <input type="number" id="canvasWidthVisible" value="${canvasWidth}" min="400" step="50" onchange="updateCanvasSize()">
+                    </div>
+                    <div class="property-group">
+                        <label>Height</label>
+                        <input type="number" id="canvasHeightVisible" value="${canvasHeight}" min="300" step="50" onchange="updateCanvasSize()">
+                    </div>
+                </div>
+                <div class="property-group">
+                    <button class="toolbar-btn" onclick="fitCanvasToComponents()" style="width: 100%;">
+                        📐 Fit to Components
+                    </button>
+                </div>
+                <hr style="margin: 16px 0; border: none; border-top: 1px solid #e2e8f0;">
+                <div class="property-group" style="margin-bottom: 12px;">
+                    <div style="font-size: 14px; font-weight: 600; color: #1e293b; margin-bottom: 12px;">
+                        ⊞ Grid & Guides
+                    </div>
+                </div>
+                <div class="property-group">
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; text-transform: none; font-weight: normal;">
+                            <input type="checkbox" id="showGridCheck" onchange="toggleGrid()" ${gridSettings.showGrid ? 'checked' : ''}>
+                            Show Grid
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; text-transform: none; font-weight: normal;">
+                            <input type="checkbox" id="showRulersCheck" onchange="toggleRulers()" ${gridSettings.showRulers ? 'checked' : ''}>
+                            Show Rulers
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; text-transform: none; font-weight: normal;">
+                            <input type="checkbox" id="snapToGridCheck" onchange="toggleSnapToGrid()" ${gridSettings.snapToGrid ? 'checked' : ''}>
+                            Snap to Grid
+                        </label>
+                    </div>
+                </div>
+                <div class="property-group">
+                    <label>Grid Size</label>
+                    <select onchange="setGridSize(this.value)">
+                        <option value="small" ${gridSettings.gridSize === 'small' ? 'selected' : ''}>Small (10px)</option>
+                        <option value="medium" ${gridSettings.gridSize === 'medium' ? 'selected' : ''}>Medium (50px)</option>
+                        <option value="large" ${gridSettings.gridSize === 'large' ? 'selected' : ''}>Large (100px)</option>
+                    </select>
+                </div>
+            `;
+
+            propertiesContent.innerHTML = html;
+        }
+
+        // Update screen info from visible inputs
+        function updateScreenInfo() {
+            const nameInput = document.getElementById('screenNameVisible');
+            const titleInput = document.getElementById('screenTitleVisible');
+            if (nameInput) setScreenNameValue(nameInput.value);
+            if (titleInput) setScreenTitleValue(titleInput.value);
+            markDocumentDirty();
+        }
+
+        // Update canvas size from visible inputs
+        function updateCanvasSize() {
+            const widthInput = document.getElementById('canvasWidthVisible');
+            const heightInput = document.getElementById('canvasHeightVisible');
+            if (widthInput) setCanvasWidthValue(widthInput.value);
+            if (heightInput) setCanvasHeightValue(heightInput.value);
+            setCanvasSize();
+            markDocumentDirty();
+        }
+
         // Show properties panel
         function showProperties(comp) {
             if (!comp) {
-                propertiesContent.innerHTML = '<p style="color: #94a3b8; font-size: 13px;">Select a component to edit its properties</p>';
+                showCanvasProperties();
                 return;
             }
 
@@ -3040,7 +3790,7 @@
         }
 
         // History for undo/redo
-        function saveHistory() {
+        function saveHistory(skipDirty = false) {
             history = history.slice(0, historyIndex + 1);
             history.push(JSON.stringify(components));
             historyIndex = history.length - 1;
@@ -3049,6 +3799,11 @@
             if (history.length > 50) {
                 history.shift();
                 historyIndex--;
+            }
+
+            // Mark document as dirty (unless loading from file)
+            if (!skipDirty && historyIndex > 0) {
+                markDocumentDirty();
             }
         }
 
@@ -3085,8 +3840,8 @@
 
         // Auto-resize canvas based on component positions
         function autoResizeCanvas() {
-            const manualWidth = parseInt(document.getElementById('canvasWidth').value) || 1200;
-            const manualHeight = parseInt(document.getElementById('canvasHeight').value) || 800;
+            const manualWidth = getCanvasWidth();
+            const manualHeight = getCanvasHeight();
 
             let maxRight = manualWidth;
             let maxBottom = manualHeight;
@@ -3106,17 +3861,17 @@
 
             // Update input fields if canvas expanded
             if (maxRight > manualWidth) {
-                document.getElementById('canvasWidth').value = Math.ceil(maxRight / 100) * 100;
+                setCanvasWidthValue(Math.ceil(maxRight / 100) * 100);
             }
             if (maxBottom > manualHeight) {
-                document.getElementById('canvasHeight').value = Math.ceil(maxBottom / 100) * 100;
+                setCanvasHeightValue(Math.ceil(maxBottom / 100) * 100);
             }
         }
 
         // Manually set canvas size
         function setCanvasSize(showMessage = true) {
-            const width = parseInt(document.getElementById('canvasWidth').value) || 1200;
-            const height = parseInt(document.getElementById('canvasHeight').value) || 800;
+            const width = getCanvasWidth();
+            const height = getCanvasHeight();
 
             canvas.style.width = Math.max(400, width) + 'px';
             canvas.style.height = Math.max(300, height) + 'px';
@@ -3176,13 +3931,14 @@
                 canvas.style.minWidth = newWidth + 'px';
                 canvas.style.minHeight = newHeight + 'px';
 
-                document.getElementById('canvasWidth').value = newWidth;
-                document.getElementById('canvasHeight').value = newHeight;
+                setCanvasWidthValue(newWidth);
+                setCanvasHeightValue(newHeight);
             });
 
             document.addEventListener('mouseup', () => {
                 if (isResizingCanvas) {
                     isResizingCanvas = false;
+                    markDocumentDirty();
                     // Redraw rulers if visible
                     if (gridSettings.showRulers) {
                         drawRulers();
@@ -3194,8 +3950,8 @@
         // Fit canvas to components (shrink to fit)
         function fitCanvasToComponents() {
             if (components.length === 0) {
-                document.getElementById('canvasWidth').value = 1200;
-                document.getElementById('canvasHeight').value = 800;
+                setCanvasWidthValue(1200);
+                setCanvasHeightValue(800);
                 setCanvasSize();
                 return;
             }
@@ -3215,21 +3971,22 @@
             const newWidth = Math.max(400, Math.ceil(maxRight / 100) * 100);
             const newHeight = Math.max(300, Math.ceil(maxBottom / 100) * 100);
 
-            document.getElementById('canvasWidth').value = newWidth;
-            document.getElementById('canvasHeight').value = newHeight;
+            setCanvasWidthValue(newWidth);
+            setCanvasHeightValue(newHeight);
 
             setCanvasSize(false);
+            markDocumentDirty();
             showToast(`Canvas fitted: ${newWidth} x ${newHeight}`, 'success');
         }
 
-        // Save/Load JSON
+        // Save/Load JSON (legacy functions for compatibility)
         function saveDesign() {
             const design = {
-                screenId: document.getElementById('screenName').value,
-                screenTitle: document.getElementById('screenTitle').value,
+                screenId: getScreenName(),
+                screenTitle: getScreenTitle(),
                 theme: currentTheme,
-                canvasWidth: parseInt(document.getElementById('canvasWidth').value) || 1200,
-                canvasHeight: parseInt(document.getElementById('canvasHeight').value) || 800,
+                canvasWidth: getCanvasWidth(),
+                canvasHeight: getCanvasHeight(),
                 components: components,
                 version: '1.0',
                 createdAt: new Date().toISOString()
@@ -3248,53 +4005,22 @@
             showToast('Design saved successfully!', 'success');
         }
 
+        // Legacy function - kept for compatibility
         function loadDesign() {
-            fileInput.click();
+            docOpen();
+        }
+
+        // Legacy save function - kept for compatibility
+        function saveDesign() {
+            docSave();
         }
 
         fileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
 
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    const design = JSON.parse(e.target.result);
-
-                    document.getElementById('screenName').value = design.screenId || '';
-                    document.getElementById('screenTitle').value = design.screenTitle || '';
-                    components = design.components || [];
-
-                    // Load theme
-                    if (design.theme) {
-                        currentTheme = design.theme;
-                        document.getElementById('themeSelect').value = design.theme;
-                        changeTheme(design.theme);
-                    }
-
-                    // Load canvas size
-                    if (design.canvasWidth) {
-                        document.getElementById('canvasWidth').value = design.canvasWidth;
-                    }
-                    if (design.canvasHeight) {
-                        document.getElementById('canvasHeight').value = design.canvasHeight;
-                    }
-
-                    // Find max component ID
-                    componentIdCounter = 1;
-                    components.forEach(c => {
-                        const num = parseInt(c.id.replace('comp_', ''));
-                        if (num >= componentIdCounter) componentIdCounter = num + 1;
-                    });
-
-                    rerenderCanvas();
-                    saveHistory();
-                    showToast('Design loaded successfully!', 'success');
-                } catch (err) {
-                    showToast('Error loading file: ' + err.message, 'error');
-                }
-            };
-            reader.readAsText(file);
+            // Use new document system
+            handleFileOpen(file);
             fileInput.value = '';
         });
 
@@ -3346,7 +4072,7 @@
                     scale: 2 // Higher quality
                 }).then(canvasEl => {
                     const link = document.createElement('a');
-                    link.download = `${document.getElementById('screenName').value || 'screen'}.png`;
+                    link.download = `${getScreenName() || 'screen'}.png`;
                     link.href = canvasEl.toDataURL();
                     link.click();
 
@@ -3673,10 +4399,10 @@ Return format:
 
                     // Update canvas size
                     if (parsed.canvasWidth) {
-                        document.getElementById('canvasWidth').value = parsed.canvasWidth;
+                        setCanvasWidthValue(parsed.canvasWidth);
                     }
                     if (parsed.canvasHeight) {
-                        document.getElementById('canvasHeight').value = parsed.canvasHeight;
+                        setCanvasHeightValue(parsed.canvasHeight);
                     }
 
                     // Find max component ID
@@ -3704,10 +4430,56 @@ Return format:
             }
         }
 
+        // Keyboard shortcuts for document operations
+        document.addEventListener('keydown', (e) => {
+            // Ctrl+N = New document
+            if (e.ctrlKey && e.key === 'n') {
+                e.preventDefault();
+                newDocument();
+            }
+            // Ctrl+S = Save
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                if (e.shiftKey) {
+                    docSaveAs();
+                } else {
+                    docSave();
+                }
+            }
+            // Ctrl+O = Open
+            if (e.ctrlKey && e.key === 'o') {
+                e.preventDefault();
+                docOpen();
+            }
+            // Ctrl+W = Close current tab
+            if (e.ctrlKey && e.key === 'w') {
+                e.preventDefault();
+                const doc = getActiveDocument();
+                if (doc) {
+                    closeDocument(doc.id);
+                }
+            }
+        });
+
+        // Warn before closing browser if there are unsaved changes
+        window.addEventListener('beforeunload', (e) => {
+            const hasUnsaved = documents.some(doc => doc.isDirty);
+            if (hasUnsaved) {
+                e.preventDefault();
+                e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+                return e.returnValue;
+            }
+        });
+
         // Initialize
-        saveHistory();
+        initDocumentSystem();
         initCanvasResize();
         setCanvasSize(false);
+
+        // Initialize rulers if default is on
+        if (gridSettings.showRulers) {
+            toggleRulers();
+        }
     </script>
 
     <!-- Optional: Add html2canvas for PNG export -->
