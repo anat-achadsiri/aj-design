@@ -15,10 +15,19 @@ For PNG export functionality, the application loads html2canvas from CDN.
 ## Architecture
 
 ### Single-File Application
-The entire application is contained in `index.html` (~5000+ lines):
+The entire application is contained in `index.html` (~4700+ lines):
 - **CSS** (lines ~10-1358): Inline styles with CSS custom properties for theming
-- **HTML** (lines ~1360-1620): Component palette sidebar, canvas, properties panel, modals
-- **JavaScript** (lines ~1625-end): All application logic
+- **HTML** (lines ~1360-1625): Component palette sidebar, canvas, properties panel, modals
+- **JavaScript** (lines ~1641-end): All application logic
+
+JavaScript is organized into sections:
+- State variables and initialization (lines ~1642-1680)
+- Document Management System (lines ~1681-2100)
+- Grid/Ruler/Snap functions (lines ~2300-2500)
+- Component rendering and manipulation (lines ~2650-3500)
+- Event handlers (drag, resize, selection) (lines ~3500-4200)
+- Save/Load/Export functions (lines ~4200-4500)
+- AI image import (Claude API integration) (lines ~4500-end)
 
 ### Core State Variables
 ```javascript
@@ -34,10 +43,12 @@ gridSettings           // Grid/ruler/snap settings object
 
 ### Document Management System
 The app supports multiple open documents via a tab interface:
-- `Document` class holds all state for each design file
+- `Document` class holds all state for each design file (id, filePath, fileHandle, displayName, isDirty, content, history)
+- Uses File System Access API (`fileHandle`) for direct file saves
 - `newDocument()`, `switchToDocument()`, `closeDocument()` manage tabs
-- Each document has its own undo/redo history
-- Unsaved changes prompt before closing/switching
+- Each document has its own undo/redo history and component ID counter
+- Unsaved changes prompt before closing/switching (isDirty flag)
+- Tab titles show asterisk (*) when document has unsaved changes
 
 ### Component System
 Components are defined by type and rendered via `getComponentHTML()`. Each component has:
@@ -52,17 +63,23 @@ Available component types: label, title, textbox, textarea, datepicker, dropdown
 - Shift+click: Add/remove from selection
 - `selectedComponents[]` stores multi-selection
 - Group operations: move, duplicate (Ctrl+D), delete
+- Drag images: Visual clones appear during drag operations via `createDragImage()`
 
 ### Grid and Ruler System
 ```javascript
 gridSettings = {
     showGrid: false,      // Toggle grid overlay
-    showRulers: true,     // Toggle rulers
+    showRulers: true,     // Toggle rulers (30px ruler bars on top/left)
     snapToGrid: false,    // Snap component positions
     gridSize: 'small',    // 'small' (10px), 'medium' (50px), 'large' (100px)
     snapSize: 10          // Pixels for snap-to-grid
 }
+
+// Grid size constants
+gridSizes = { small: 10, medium: 50, large: 100 }
 ```
+
+Functions: `toggleGrid()`, `toggleRulers()`, `toggleSnapToGrid()`, `setGridSize()`, `drawRulers()`, `snapToGrid()`
 
 ### Theming
 Six themes available via CSS custom properties. Theme CSS variables are defined at the top of `<style>` using `[data-theme="themename"]` selectors. Theme affects table headers, buttons, tabs, inputs, and labels.
@@ -99,6 +116,9 @@ The application can import UI mockups from images using Claude's Vision API:
 | `changeTheme(theme)` | Applies theme CSS variables |
 | `analyzeImageWithClaude()` | AI-powered image to component conversion |
 | `snapToGrid(value)` | Snaps position value to grid |
+| `createDragImage(comp, el, x, y)` | Creates visual clone during drag operations |
+| `toggleGrid()` / `toggleRulers()` | Toggle grid/ruler display |
+| `saveDocumentState()` / `loadDocumentState()` | Save/restore document state when switching tabs |
 
 ## Project Structure
 

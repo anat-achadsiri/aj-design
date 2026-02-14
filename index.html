@@ -638,6 +638,10 @@
             box-sizing: border-box;
         }
 
+        .comp-textbox[readonly] {
+            pointer-events: none;
+        }
+
         .comp-textarea {
             width: 100%;
             height: 100%;
@@ -648,6 +652,10 @@
             background: white;
             resize: none;
             box-sizing: border-box;
+        }
+
+        .comp-textarea[readonly] {
+            pointer-events: none;
         }
 
         .comp-datepicker {
@@ -666,6 +674,10 @@
             border-radius: 4px;
             font-size: 14px;
             box-sizing: border-box;
+        }
+
+        .comp-datepicker input[readonly] {
+            pointer-events: none;
         }
 
         .comp-datepicker .calendar-icon {
@@ -694,6 +706,10 @@
             -webkit-appearance: none;
             -moz-appearance: none;
             box-sizing: border-box;
+        }
+
+        .comp-dropdown[disabled] {
+            pointer-events: none;
         }
 
         .comp-dropdown-wrapper {
@@ -1655,6 +1671,8 @@
         let resizeHandle = null;
         let resizeStart = { x: 0, y: 0, width: 0, height: 0 };
         let currentTheme = 'default';
+        let preventNextDrag = false; // Prevent drag after double-click
+        let dragTimeout = null; // Timeout for delayed drag start
 
         // Marquee selection
         let isMarqueeSelecting = false;
@@ -2483,10 +2501,14 @@
             item.addEventListener('dragstart', (e) => {
                 draggedType = item.dataset.type;
                 e.dataTransfer.effectAllowed = 'copy';
+                e.dataTransfer.setData('componentType', item.dataset.type);
             });
 
             item.addEventListener('dragend', () => {
-                draggedType = null;
+                // Delay clearing to ensure drop event fires first
+                setTimeout(() => {
+                    draggedType = null;
+                }, 50);
             });
         });
 
@@ -2511,6 +2533,7 @@
                 const y = e.clientY - rect.top;
 
                 addComponent(draggedType, x, y);
+                draggedType = null; // Clear after drop to prevent accidental creation
             }
         });
 
@@ -2520,6 +2543,9 @@
             // Skip if clicking on resize handles
             if (e.target.classList.contains('canvas-resize-handle')) return;
             if (e.target.classList.contains('resize-handle')) return;
+
+            // Disable any active text editing
+            disableAllTextEditing();
 
             // Only start marquee if clicking directly on canvas background
             // (not on dropped components or their children)
@@ -2573,6 +2599,13 @@
 
         // Marquee selection - mouse up
         document.addEventListener('mouseup', (e) => {
+            // Cancel pending drag timeout on mouseup
+            if (dragTimeout) {
+                clearTimeout(dragTimeout);
+                dragTimeout = null;
+                preventNextDrag = false;
+            }
+
             if (isMarqueeSelecting && marqueeEl) {
                 const marqueeWidth = parseInt(marqueeEl.style.width) || 0;
                 const marqueeHeight = parseInt(marqueeEl.style.height) || 0;
@@ -2622,14 +2655,18 @@
             // Don't clear if marquee just finished or if clicking on component
             if (marqueeJustFinished) return;
             if (e.target.closest('.dropped-component')) return;
-            if (e.target === canvas) {
-                clearSelection();
-            }
+            // Disable any active text editing and clear selection
+            disableAllTextEditing();
+            clearSelection();
         });
 
-        // Hide context menu on click
-        document.addEventListener('click', () => {
+        // Hide context menu on click and disable text editing if clicking outside canvas
+        document.addEventListener('click', (e) => {
             contextMenu.classList.add('hidden');
+            // If clicking outside canvas, disable text editing
+            if (!e.target.closest('.canvas') && !e.target.closest('.properties-panel')) {
+                disableAllTextEditing();
+            }
         });
 
         // Keyboard shortcuts
@@ -2767,6 +2804,30 @@
             // Event listeners
             el.addEventListener('mousedown', (e) => {
                 if (e.target.classList.contains('resize-handle')) return;
+
+                // First, disable any active text editing
+                disableAllTextEditing();
+
+                // Check if clicking on form inputs that are being edited (not readonly/disabled)
+                const targetElement = e.target;
+                const isFormElement = targetElement.tagName === 'INPUT' ||
+                                      targetElement.tagName === 'TEXTAREA' ||
+                                      targetElement.tagName === 'SELECT';
+
+                // Only block drag if form element is being edited (not readonly/disabled)
+                const isFormEditing = isFormElement &&
+                                      !targetElement.hasAttribute('readonly') &&
+                                      !targetElement.hasAttribute('disabled');
+
+                // Don't start drag if element is currently being edited
+                const isBeingEdited = targetElement.getAttribute('contenteditable') === 'true';
+
+                if (isFormEditing || (isBeingEdited && targetElement.classList.contains('comp-label')) ||
+                    (isBeingEdited && targetElement.classList.contains('comp-title'))) {
+                    e.stopPropagation();
+                    return;
+                }
+
                 e.stopPropagation();
 
                 // Ctrl+click to add to selection
@@ -2776,8 +2837,114 @@
                     // If clicking on a non-selected component, select only it
                     selectComponent(comp.id);
                 }
-                // If clicking on an already selected component (part of multi-selection), just start drag
-                startDrag(e, comp.id);
+
+                // Check if this is on a label/title that supports double-click editing
+                const isEditableText = targetElement.classList.contains('comp-label') ||
+                                       targetElement.classList.contains('comp-title');
+
+                // Check if this is a button component (single-click to edit, but can drag)
+                const isButtonComponent = targetElement.classList.contains('comp-button');
+
+                // Check if this is a form element (readonly/disabled) that needs special handling
+                const isReadonlyFormElement = isFormElement && !isFormEditing;
+
+                if (isButtonComponent) {
+                    // For button component: wait for mousemove to determine drag or edit
+                    // Clear any existing timeout
+                    if (dragTimeout) clearTimeout(dragTimeout);
+
+                    let hasMoved = false;
+                    const startX = e.clientX;
+                    const startY = e.clientY;
+
+                    const checkMove = (moveE) => {
+                        const dx = Math.abs(moveE.clientX - startX);
+                        const dy = Math.abs(moveE.clientY - startY);
+
+                        // If mouse moved more than 3 pixels, start drag
+                        if (dx > 3 || dy > 3) {
+                            hasMoved = true;
+                            document.removeEventListener('mousemove', checkMove);
+                            document.removeEventListener('mouseup', cleanup);
+                            // Prevent text selection during drag
+                            moveE.preventDefault();
+                            targetElement.blur(); // Remove focus before drag
+                            startDrag(e, comp.id);
+                        }
+                    };
+
+                    const cleanup = () => {
+                        document.removeEventListener('mousemove', checkMove);
+                        document.removeEventListener('mouseup', cleanup);
+                        // If no movement, focus the button for editing
+                        if (!hasMoved) {
+                            targetElement.focus();
+                            // Move cursor to end
+                            setTimeout(() => {
+                                const range = document.createRange();
+                                const sel = window.getSelection();
+                                if (targetElement.childNodes.length > 0) {
+                                    range.selectNodeContents(targetElement);
+                                    range.collapse(false);
+                                    sel.removeAllRanges();
+                                    sel.addRange(range);
+                                }
+                            }, 10);
+                        }
+                    };
+
+                    document.addEventListener('mousemove', checkMove);
+                    document.addEventListener('mouseup', cleanup, { once: true });
+                } else if (isEditableText || isReadonlyFormElement) {
+                    // For editable text or readonly/disabled form elements, don't start drag immediately
+                    // Wait for mousemove to determine if user is dragging or just clicking/double-clicking
+
+                    // Clear any existing timeout
+                    if (dragTimeout) clearTimeout(dragTimeout);
+
+                    if (preventNextDrag) {
+                        // Double-click just happened, don't start drag
+                        preventNextDrag = false;
+                        return;
+                    }
+
+                    let hasMoved = false;
+                    const startX = e.clientX;
+                    const startY = e.clientY;
+
+                    const checkMove = (moveE) => {
+                        const dx = Math.abs(moveE.clientX - startX);
+                        const dy = Math.abs(moveE.clientY - startY);
+
+                        // If mouse moved more than 3 pixels, start drag
+                        if (dx > 3 || dy > 3) {
+                            hasMoved = true;
+                            document.removeEventListener('mousemove', checkMove);
+                            document.removeEventListener('mouseup', cleanup);
+                            if (!preventNextDrag) {
+                                // Prevent text selection during drag
+                                moveE.preventDefault();
+                                startDrag(e, comp.id);
+                            }
+                        }
+                    };
+
+                    const cleanup = () => {
+                        document.removeEventListener('mousemove', checkMove);
+                        document.removeEventListener('mouseup', cleanup);
+                        preventNextDrag = false;
+                    };
+
+                    document.addEventListener('mousemove', checkMove);
+                    document.addEventListener('mouseup', cleanup, { once: true });
+                } else {
+                    // Non-editable elements: start drag immediately
+                    if (!preventNextDrag) {
+                        e.preventDefault(); // Prevent text selection
+                        startDrag(e, comp.id);
+                    }
+                    preventNextDrag = false;
+                }
             });
 
             el.addEventListener('contextmenu', (e) => {
@@ -2790,6 +2957,18 @@
                 showContextMenu(e.clientX, e.clientY);
             });
 
+            // Prevent dropping new components on top of existing ones
+            el.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                e.dataTransfer.dropEffect = 'none';
+            });
+
+            el.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+
             canvas.appendChild(el);
             addResizeHandles(el, comp);
         }
@@ -2800,26 +2979,26 @@
             switch (comp.type) {
                 case 'label':
                     const labelText = (p.text || '').replace(/\n/g, '<br>');
-                    return `<div class="comp-label" contenteditable="true" data-comp-id="${comp.id}" style="font-size: ${p.fontSize}px; font-weight: ${p.bold ? 'bold' : 'normal'}" onblur="saveLabelText(this)" onkeydown="handleLabelKeydown(event, this)">${labelText}</div>`;
+                    return `<div class="comp-label" contenteditable="false" data-comp-id="${comp.id}" style="font-size: ${p.fontSize}px; font-weight: ${p.bold ? 'bold' : 'normal'}" ondblclick="enableTextEdit(this)" onblur="disableTextEdit(this)" onkeydown="handleLabelKeydown(event, this)">${labelText}</div>`;
 
                 case 'title':
-                    return `<div class="comp-title" contenteditable="true" data-comp-id="${comp.id}" style="font-size: ${p.fontSize}px" onblur="saveLabelText(this)" onkeydown="handleLabelKeydown(event, this)">${p.text}</div>`;
+                    return `<div class="comp-title" contenteditable="false" data-comp-id="${comp.id}" style="font-size: ${p.fontSize}px" ondblclick="enableTextEdit(this)" onblur="disableTextEdit(this)" onkeydown="handleLabelKeydown(event, this)">${p.text}</div>`;
 
                 case 'textbox':
-                    return `<input type="text" class="comp-textbox" placeholder="${p.placeholder}" style="width: 100%">`;
+                    return `<input type="text" class="comp-textbox" placeholder="${p.placeholder}" readonly ondblclick="enableInputEdit(this)" onblur="disableInputEdit(this)" onkeydown="handleInputKeydown(event, this)" style="width: 100%">`;
 
                 case 'textarea':
-                    return `<textarea class="comp-textarea" placeholder="${p.placeholder}" style="width: 100%; height: 100%"></textarea>`;
+                    return `<textarea class="comp-textarea" placeholder="${p.placeholder}" readonly ondblclick="enableInputEdit(this)" onblur="disableInputEdit(this)" style="width: 100%; height: 100%"></textarea>`;
 
                 case 'datepicker':
                     return `<div class="comp-datepicker">
-                        <input type="text" placeholder="${p.placeholder}">
+                        <input type="text" placeholder="${p.placeholder}" readonly ondblclick="enableInputEdit(this)" onblur="disableInputEdit(this)" onkeydown="handleInputKeydown(event, this)">
                         <div class="calendar-icon">📅</div>
                     </div>`;
 
                 case 'dropdown':
                     return `<div class="comp-dropdown-wrapper">
-                        <select class="comp-dropdown">
+                        <select class="comp-dropdown" disabled ondblclick="enableSelectEdit(this)" onblur="disableSelectEdit(this)" onkeydown="handleSelectKeydown(event, this)">
                             <option value="">${p.placeholder}</option>
                             ${p.options.split(',').map(opt => `<option>${opt.trim()}</option>`).join('')}
                         </select>
@@ -2839,7 +3018,7 @@
 
                 case 'button':
                     const btnClass = p.style === 'default' ? '' : p.style;
-                    return `<button class="comp-button ${btnClass}">${p.text}</button>`;
+                    return `<button class="comp-button ${btnClass}" contenteditable="true" data-comp-id="${comp.id}" onblur="saveButtonText(this)" onkeydown="handleButtonKeydown(event, this)">${p.text}</button>`;
 
                 case 'iconbutton':
                     const emojiIcons = {
@@ -3240,6 +3419,10 @@
                 const onMouseMove = (moveE) => {
                     if (!isMultiDragging) return;
 
+                    // Prevent text selection during drag
+                    moveE.preventDefault();
+                    window.getSelection().removeAllRanges();
+
                     // Get fresh canvas position
                     const canvasRect = canvas.getBoundingClientRect();
 
@@ -3296,39 +3479,41 @@
                 // Single drag mode
                 isDragging = true;
 
-                // Use component's screen position as reference to calculate canvas coordinates
-                // This is more reliable than using canvas.getBoundingClientRect()
-                const elRect = el.getBoundingClientRect();
+                // Get canvas position
+                const canvasRect = canvas.getBoundingClientRect();
 
-                // Calculate mouse position in canvas coordinates using component as reference
-                // Formula: mouseCanvasPos = mouseScreenPos - componentScreenPos + componentCanvasPos
-                const getMouseCanvasPos = (event) => {
-                    const currentElRect = el.getBoundingClientRect();
-                    return {
-                        x: event.clientX - currentElRect.left + comp.x,
-                        y: event.clientY - currentElRect.top + comp.y
-                    };
-                };
+                // Calculate mouse position on canvas
+                const mouseCanvasX = e.clientX - canvasRect.left;
+                const mouseCanvasY = e.clientY - canvasRect.top;
 
-                // Initial drag image position = mouse position on canvas
-                const initialPos = getMouseCanvasPos(e);
-                let dragX = initialPos.x;
-                let dragY = initialPos.y;
+                // Calculate offset from mouse to component's current position
+                const offsetX = comp.x - mouseCanvasX;
+                const offsetY = comp.y - mouseCanvasY;
 
-                // Create drag image at mouse position
-                const dragImage = createDragImage(comp, el, dragX, dragY);
+                // Create drag image at component's current position (not mouse position)
+                const dragImage = createDragImage(comp, el, comp.x, comp.y);
                 el.classList.add('dragging');
 
-                let newX = dragX;
-                let newY = dragY;
+                let newX = comp.x;
+                let newY = comp.y;
 
                 const onMouseMove = (moveE) => {
                     if (!isDragging) return;
 
-                    // Calculate mouse position on canvas
-                    const pos = getMouseCanvasPos(moveE);
-                    newX = pos.x;
-                    newY = pos.y;
+                    // Prevent text selection during drag
+                    moveE.preventDefault();
+                    window.getSelection().removeAllRanges();
+
+                    // Get fresh canvas position
+                    const canvasRect = canvas.getBoundingClientRect();
+
+                    // Calculate current mouse position on canvas
+                    const currentMouseX = moveE.clientX - canvasRect.left;
+                    const currentMouseY = moveE.clientY - canvasRect.top;
+
+                    // Calculate new position: mouse position + offset
+                    newX = currentMouseX + offsetX;
+                    newY = currentMouseY + offsetY;
 
                     // Keep minimum bounds (allow expansion to the right and bottom)
                     newX = Math.max(0, newX);
@@ -3346,15 +3531,15 @@
                 const onMouseUp = () => {
                     isDragging = false;
 
-                    // Move component to ghost position
+                    // Move component to drag image position
                     comp.x = newX;
                     comp.y = newY;
                     el.style.left = comp.x + 'px';
                     el.style.top = comp.y + 'px';
 
-                    // Remove ghost and dragging class
+                    // Remove drag image and dragging class
                     el.classList.remove('dragging');
-                    ghost.remove();
+                    dragImage.remove();
 
                     saveHistory();
                     autoResizeCanvas();
@@ -3887,6 +4072,98 @@
         }
 
         // Save label text from inline editing
+        // Disable all text editing (called before any interaction)
+        function disableAllTextEditing() {
+            // Find all elements currently being edited
+            document.querySelectorAll('[contenteditable="true"]').forEach(el => {
+                if (el.classList.contains('comp-label') || el.classList.contains('comp-title')) {
+                    disableTextEdit(el);
+                }
+            });
+            // Blur any focused input/textarea/select
+            document.querySelectorAll('.comp-textbox, .comp-textarea, .comp-datepicker input, .comp-dropdown').forEach(el => {
+                if (document.activeElement === el) {
+                    el.blur();
+                }
+            });
+        }
+
+        // Enable input/textarea editing (double-click)
+        function enableInputEdit(el) {
+            preventNextDrag = true;
+            el.removeAttribute('readonly');
+            el.focus();
+            // Move cursor to end
+            setTimeout(() => {
+                if (el.setSelectionRange) {
+                    const len = el.value.length;
+                    el.setSelectionRange(len, len);
+                }
+            }, 10);
+        }
+
+        // Disable input/textarea editing (blur)
+        function disableInputEdit(el) {
+            el.setAttribute('readonly', 'readonly');
+            preventNextDrag = false;
+        }
+
+        // Enable select editing (double-click)
+        function enableSelectEdit(el) {
+            preventNextDrag = true;
+            el.removeAttribute('disabled');
+            el.focus();
+        }
+
+        // Disable select editing (blur)
+        function disableSelectEdit(el) {
+            el.setAttribute('disabled', 'disabled');
+            preventNextDrag = false;
+        }
+
+        // Enable text editing mode (double-click)
+        function enableTextEdit(el) {
+            if (!el) return;
+            // Prevent drag from starting
+            preventNextDrag = true;
+            if (dragTimeout) {
+                clearTimeout(dragTimeout);
+                dragTimeout = null;
+            }
+
+            el.contentEditable = 'true';
+            el.setAttribute('contenteditable', 'true');
+            el.focus();
+            // Move cursor to end of text instead of selecting all
+            setTimeout(() => {
+                const range = document.createRange();
+                const sel = window.getSelection();
+
+                // Move cursor to the end
+                range.selectNodeContents(el);
+                range.collapse(false); // false = collapse to end
+
+                sel.removeAllRanges();
+                sel.addRange(range);
+            }, 10);
+        }
+
+        // Disable text editing mode and save (blur)
+        function disableTextEdit(el) {
+            if (!el) return;
+            // Only disable if currently editable
+            if (el.getAttribute('contenteditable') === 'false') return;
+
+            el.contentEditable = 'false';
+            el.setAttribute('contenteditable', 'false');
+            saveLabelText(el);
+            // Remove focus and clear selection
+            if (document.activeElement === el) {
+                el.blur();
+            }
+            window.getSelection().removeAllRanges();
+        }
+
         function saveLabelText(el) {
             const compId = el.dataset.compId;
             const comp = components.find(c => c.id === compId);
@@ -3906,6 +4183,10 @@
 
             if (comp.properties.text !== text) {
                 comp.properties.text = text;
+
+                // Update the display text without re-rendering entire component
+                el.innerHTML = text.replace(/\n/g, '<br>');
+
                 saveHistory();
                 // Update properties panel if this component is selected
                 if (selectedComponent && selectedComponent.id === compId) {
@@ -3920,16 +4201,81 @@
             // Enter without shift to finish editing
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                el.blur();
+                disableTextEdit(el);
             }
             // Escape to cancel
             if (e.key === 'Escape') {
+                e.preventDefault();
                 const compId = el.dataset.compId;
                 const comp = components.find(c => c.id === compId);
                 if (comp) {
                     el.innerHTML = (comp.properties.text || '').replace(/\n/g, '<br>');
                 }
+                disableTextEdit(el);
+            }
+        }
+
+        // Handle keyboard events in input editing (textbox, datepicker)
+        function handleInputKeydown(e, el) {
+            // Enter to finish editing
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                el.blur(); // This will trigger disableInputEdit
+            }
+            // Escape to cancel - just blur without saving
+            if (e.key === 'Escape') {
+                e.preventDefault();
                 el.blur();
+            }
+        }
+
+        // Handle keyboard events in select editing (dropdown)
+        function handleSelectKeydown(e, el) {
+            // Enter to finish editing
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                el.blur(); // This will trigger disableSelectEdit
+            }
+            // Escape to cancel
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                el.blur();
+            }
+        }
+
+        // Handle keyboard events in button editing
+        function handleButtonKeydown(e, el) {
+            // Enter to finish editing (no multi-line for buttons)
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                el.blur();
+            }
+            // Escape to cancel
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                const compId = el.dataset.compId;
+                const comp = components.find(c => c.id === compId);
+                if (comp) {
+                    el.textContent = comp.properties.text || 'Button';
+                }
+                el.blur();
+            }
+        }
+
+        // Save button text
+        function saveButtonText(el) {
+            const compId = el.dataset.compId;
+            const comp = components.find(c => c.id === compId);
+            if (!comp) return;
+
+            const text = el.textContent.trim();
+            if (comp.properties.text !== text) {
+                comp.properties.text = text;
+                saveHistory();
+                // Update properties panel if this component is selected
+                if (selectedComponent && selectedComponent.id === compId) {
+                    showProperties(comp);
+                }
             }
         }
 
