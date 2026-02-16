@@ -15,19 +15,19 @@ For PNG export functionality, the application loads html2canvas from CDN.
 ## Architecture
 
 ### Single-File Application
-The entire application is contained in `index.html` (~4700+ lines):
-- **CSS** (lines ~10-1358): Inline styles with CSS custom properties for theming
-- **HTML** (lines ~1360-1625): Component palette sidebar, canvas, properties panel, modals
-- **JavaScript** (lines ~1641-end): All application logic
+The entire application is contained in `index.html` (~5000+ lines):
+- **CSS** (lines ~10-1390): Inline styles with CSS custom properties for theming
+- **HTML** (lines ~1391-1655): Component palette sidebar, canvas, properties panel, modals
+- **JavaScript** (lines ~1657-end): All application logic
 
 JavaScript is organized into sections:
-- State variables and initialization (lines ~1642-1680)
-- Document Management System (lines ~1681-2100)
-- Grid/Ruler/Snap functions (lines ~2300-2500)
-- Component rendering and manipulation (lines ~2650-3500)
-- Event handlers (drag, resize, selection) (lines ~3500-4200)
-- Save/Load/Export functions (lines ~4200-4500)
-- AI image import (Claude API integration) (lines ~4500-end)
+- State variables and initialization (lines ~1658-1700)
+- Document Management System (lines ~1700-2300)
+- Grid/Ruler/Snap functions (lines ~2339-2500)
+- Component rendering and manipulation (lines ~2696-3600)
+- Event handlers (drag, resize, selection) (lines ~3600-4280)
+- Save/Load/Export functions (lines ~4280-4730)
+- AI image import (Claude API integration) (lines ~4730-end)
 
 ### Core State Variables
 ```javascript
@@ -109,12 +109,12 @@ The application can import UI mockups from images using Claude's Vision API:
 | `renderComponent(comp)` | Creates DOM element for component |
 | `getComponentHTML(comp)` | Returns inner HTML for component type |
 | `updateComponentElement(comp)` | Re-renders component after property change |
-| `showPropertiesPanel(comp)` | Shows component-specific properties panel |
+| `showProperties(comp)` | Shows component-specific properties panel |
 | `saveHistory()` | Saves current state for undo/redo |
 | `docSave()` / `docSaveAs()` | Document save operations |
 | `exportImage()` | PNG export using html2canvas |
 | `changeTheme(theme)` | Applies theme CSS variables |
-| `analyzeImageWithClaude()` | AI-powered image to component conversion |
+| `analyzeImage()` | AI-powered image to component conversion |
 | `snapToGrid(value)` | Snaps position value to grid |
 | `createDragImage(comp, el, x, y)` | Creates visual clone during drag operations |
 | `toggleGrid()` / `toggleRulers()` | Toggle grid/ruler display |
@@ -135,9 +135,12 @@ The application can import UI mockups from images using Claude's Vision API:
 
 - `Ctrl+N`: New document
 - `Ctrl+S`: Save
+- `Ctrl+Shift+S`: Save As
 - `Ctrl+O`: Open
+- `Ctrl+W`: Close current tab
 - `Ctrl+Z`: Undo
 - `Ctrl+Y`: Redo
 - `Ctrl+D`: Duplicate selected
 - `Delete`: Delete selected
 - `Shift+Click`: Multi-select
+- `Ctrl/Cmd+Click`: Add to selection

@@ -1387,6 +1387,113 @@
         .unsaved-modal .modal-footer .toolbar-btn {
             min-width: 100px;
         }
+
+        /* Row Text Editor Modal Styles */
+        .row-text-row {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        .row-text-row-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #475569;
+        }
+        .row-text-part {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 8px;
+            padding: 8px;
+            background: white;
+            border-radius: 4px;
+            border: 1px solid #e2e8f0;
+        }
+        .row-text-part input[type="text"] {
+            flex: 1;
+            padding: 6px 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        .row-text-part input.icon-input {
+            width: 50px;
+            flex: none;
+            text-align: center;
+        }
+        .row-text-part label {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            color: #64748b;
+            white-space: nowrap;
+        }
+        .row-text-part .remove-part {
+            background: none;
+            border: none;
+            color: #ef4444;
+            cursor: pointer;
+            padding: 4px;
+            font-size: 14px;
+        }
+        .row-text-part .remove-part:hover {
+            color: #dc2626;
+        }
+
+        /* Cell Text Editor Styles */
+        .cell-editor-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .cell-editor-table th {
+            background: var(--table-header-bg, #e0f2fe);
+            padding: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid #e2e8f0;
+        }
+        .cell-editor-table td {
+            padding: 8px;
+            border: 1px solid #e2e8f0;
+            vertical-align: top;
+        }
+        .cell-editor-row-num {
+            background: #f1f5f9;
+            font-weight: 600;
+            text-align: center;
+            width: 40px;
+            color: #64748b;
+        }
+        .cell-input-group {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        .cell-input-group label {
+            display: flex;
+            align-items: center;
+            font-size: 11px;
+            color: #64748b;
+            cursor: pointer;
+        }
+        .cell-text-input {
+            flex: 1;
+            padding: 6px 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            font-size: 12px;
+            min-width: 80px;
+        }
+        .cell-text-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
     </style>
 </head>
 <body>
@@ -1636,6 +1743,23 @@
                 <button class="toolbar-btn" onclick="closeUnsavedModal('dontsave')">Don't Save</button>
                 <button class="toolbar-btn" onclick="closeUnsavedModal('cancel')">Cancel</button>
                 <button class="toolbar-btn primary" onclick="closeUnsavedModal('save')">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cell Text Editor Modal -->
+    <div class="modal-overlay hidden" id="cellTextEditorModal">
+        <div class="modal" style="width: 750px; max-height: 85vh;">
+            <div class="modal-header">
+                <span>📝 Edit Cell Texts</span>
+                <button class="modal-close" onclick="closeCellTextEditor()">&times;</button>
+            </div>
+            <div class="modal-body" style="max-height: 65vh; overflow-y: auto;">
+                <div id="cellTextEditorContent"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="toolbar-btn" onclick="closeCellTextEditor()" style="min-width: 80px;">Cancel</button>
+                <button class="toolbar-btn primary" onclick="applyCellTexts()" style="min-width: 80px;">Apply</button>
             </div>
         </div>
     </div>
@@ -2772,9 +2896,7 @@
                     columns: 'Column 1, Column 2, Column 3',
                     rows: 3,
                     fieldName: 'table_data',
-                    showRowIcons: true,
-                    rowIconsPosition: 'left',
-                    rowIcons: '🟡, 🟢🟠',
+                    cellTexts: [],  // 2D array: cellTexts[row][col] = {parts: [{text, bold, underline, icon}]}
                     hasActionColumn: true,
                     actionColumnPosition: 'left',
                     actionIcons: 'edit, delete',
@@ -3072,9 +3194,8 @@
 
                 case 'table':
                     const cols = p.columns.split(',').map(c => c.trim());
-                    const rowIconsList = p.rowIcons ? p.rowIcons.split(',').map(r => r.trim()) : [];
+                    const cellTexts = p.cellTexts || [];
                     const actionIconsList = p.actionIcons ? p.actionIcons.split(',').map(a => a.trim()) : [];
-                    const rowIconsPos = p.rowIconsPosition || 'left';
                     const actionPos = p.actionColumnPosition || 'right';
 
                     // Helper to generate action cell
@@ -3126,26 +3247,34 @@
                         return actionsHTML;
                     };
 
-                    // Helper to generate row icons cell
-                    const getRowIconCell = (isHeader, rowIndex) => {
-                        if (!p.showRowIcons) return '';
-                        if (isHeader) {
-                            return '<th style="width: 50px;"></th>';
+                    // Helper to render cell content with styling
+                    const renderCellContent = (rowIndex, colIndex) => {
+                        const rowData = cellTexts[rowIndex];
+                        if (!rowData) return '';
+                        const cellData = rowData[colIndex];
+                        if (!cellData) return '';
+
+                        // Support new format { text, bold, underline }, string, and old parts format
+                        if (typeof cellData === 'object' && 'text' in cellData) {
+                            let style = '';
+                            if (cellData.bold) style += 'font-weight: bold;';
+                            if (cellData.underline) style += 'text-decoration: underline;';
+                            return style ? `<span style="${style}">${cellData.text || ''}</span>` : (cellData.text || '');
                         }
-                        const icons = rowIconsList[rowIndex] || rowIconsList[0] || '⚪';
-                        return `<td style="text-align: center;">${icons}</td>`;
+                        if (typeof cellData === 'string') {
+                            return cellData;
+                        }
+                        if (cellData.parts) {
+                            return cellData.parts.map(p => p.text || '').join(' ');
+                        }
+                        return '';
                     };
 
                     let tableHTML = '<table class="comp-table"><thead><tr>';
 
-                    // Header row - left columns first
-                    if (p.showRowIcons && rowIconsPos === 'left') tableHTML += getRowIconCell(true);
+                    // Header row
                     if (p.hasActionColumn && actionPos === 'left') tableHTML += getActionCell(true);
-
                     cols.forEach(col => tableHTML += `<th>${col}</th>`);
-
-                    // Header row - right columns
-                    if (p.showRowIcons && rowIconsPos === 'right') tableHTML += getRowIconCell(true);
                     if (p.hasActionColumn && actionPos === 'right') tableHTML += getActionCell(true);
 
                     tableHTML += '</tr></thead><tbody>';
@@ -3153,14 +3282,13 @@
                     for (let i = 0; i < p.rows; i++) {
                         tableHTML += '<tr>';
 
-                        // Left columns first
-                        if (p.showRowIcons && rowIconsPos === 'left') tableHTML += getRowIconCell(false, i);
                         if (p.hasActionColumn && actionPos === 'left') tableHTML += getActionCell(false);
 
-                        cols.forEach(() => tableHTML += '<td></td>');
+                        cols.forEach((col, j) => {
+                            const cellContent = renderCellContent(i, j);
+                            tableHTML += `<td>${cellContent}</td>`;
+                        });
 
-                        // Right columns
-                        if (p.showRowIcons && rowIconsPos === 'right') tableHTML += getRowIconCell(false, i);
                         if (p.hasActionColumn && actionPos === 'right') tableHTML += getActionCell(false);
 
                         tableHTML += '</tr>';
@@ -3936,23 +4064,13 @@
                         </div>
                         <hr style="margin: 12px 0; border: none; border-top: 1px solid #e2e8f0;">
                         <div class="property-group">
-                            <label>Show Row Icons</label>
-                            <select onchange="updateProp('showRowIcons', this.value === 'true')">
-                                <option value="false" ${!p.showRowIcons ? 'selected' : ''}>No</option>
-                                <option value="true" ${p.showRowIcons ? 'selected' : ''}>Yes</option>
-                            </select>
-                        </div>
-                        <div class="property-group">
-                            <label>Row Icons Position</label>
-                            <select onchange="updateProp('rowIconsPosition', this.value)">
-                                <option value="left" ${(p.rowIconsPosition || 'left') === 'left' ? 'selected' : ''}>Left</option>
-                                <option value="right" ${p.rowIconsPosition === 'right' ? 'selected' : ''}>Right</option>
-                            </select>
-                        </div>
-                        <div class="property-group">
-                            <label>Row Icons (per row, comma separated)</label>
-                            <textarea rows="2" onchange="updateProp('rowIcons', this.value)" placeholder="🟡, 🟢🟠, 🔵">${p.rowIcons || ''}</textarea>
-                            <small style="color: #64748b; font-size: 11px;">Use: 🟡🟢🟠🔵🟣⚪🔴 or combine like 🟢🟠</small>
+                            <label>Cell Contents</label>
+                            <button class="toolbar-btn" onclick="openCellTextEditor()" style="width: 100%;">
+                                📝 Edit Cell Texts
+                            </button>
+                            <small style="color: #64748b; font-size: 11px;">
+                                Add styled text, icons to each cell
+                            </small>
                         </div>
                         <hr style="margin: 12px 0; border: none; border-top: 1px solid #e2e8f0;">
                         <div class="property-group">
@@ -4069,6 +4187,120 @@
             updateComponentElement(selectedComponent);
             showProperties(selectedComponent);
             saveHistory();
+        }
+
+        // Helper function to update rowTexts from textarea input
+        function updateRowTexts(value) {
+            if (!selectedComponent) return;
+            try {
+                const lines = value.trim().split('\n').filter(l => l.trim());
+                const rowTexts = lines.map(line => JSON.parse(line.trim()));
+                updateProp('rowTexts', rowTexts);
+            } catch (e) {
+                showToast('Invalid JSON format', 'error');
+            }
+        }
+
+        // Helper function to format rowTexts array for display in textarea
+        function formatRowTextsForDisplay(rowTexts) {
+            if (!rowTexts || !Array.isArray(rowTexts) || rowTexts.length === 0) return '';
+            return rowTexts.map(r => JSON.stringify(r)).join('\n');
+        }
+
+        // Cell Text Editor state
+        let cellTextEditorData = [];
+        let cellTextEditorCols = [];
+        let cellTextEditorRows = 0;
+
+        function openCellTextEditor() {
+            if (!selectedComponent || selectedComponent.type !== 'table') return;
+
+            const p = selectedComponent.properties;
+            cellTextEditorCols = p.columns.split(',').map(c => c.trim());
+            cellTextEditorRows = p.rows;
+
+            // Copy current cellTexts to editor state as objects { text, bold, underline }
+            cellTextEditorData = [];
+            const existingData = p.cellTexts || [];
+
+            for (let i = 0; i < cellTextEditorRows; i++) {
+                cellTextEditorData[i] = [];
+                for (let j = 0; j < cellTextEditorCols.length; j++) {
+                    const cellValue = existingData[i] && existingData[i][j];
+                    // Support old format (object with parts), string format, and new format
+                    if (cellValue && typeof cellValue === 'object' && 'text' in cellValue) {
+                        // New format { text, bold, underline }
+                        cellTextEditorData[i][j] = { ...cellValue };
+                    } else if (typeof cellValue === 'string') {
+                        cellTextEditorData[i][j] = { text: cellValue, bold: false, underline: false };
+                    } else if (cellValue && cellValue.parts && cellValue.parts.length > 0) {
+                        // Convert old parts format
+                        const firstPart = cellValue.parts[0];
+                        cellTextEditorData[i][j] = {
+                            text: cellValue.parts.map(p => p.text || '').join(' '),
+                            bold: firstPart.bold || false,
+                            underline: firstPart.underline || false
+                        };
+                    } else {
+                        cellTextEditorData[i][j] = { text: '', bold: false, underline: false };
+                    }
+                }
+            }
+
+            renderCellTextEditor();
+            document.getElementById('cellTextEditorModal').classList.remove('hidden');
+        }
+
+        function closeCellTextEditor() {
+            document.getElementById('cellTextEditorModal').classList.add('hidden');
+        }
+
+        function renderCellTextEditor() {
+            const container = document.getElementById('cellTextEditorContent');
+
+            let html = '<table class="cell-editor-table"><thead><tr>';
+            html += '<th style="width: 40px;">#</th>';
+            cellTextEditorCols.forEach(col => {
+                html += `<th>${col}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+
+            for (let i = 0; i < cellTextEditorRows; i++) {
+                html += `<tr><td class="cell-editor-row-num">${i + 1}</td>`;
+
+                for (let j = 0; j < cellTextEditorCols.length; j++) {
+                    const cell = cellTextEditorData[i][j] || { text: '', bold: false, underline: false };
+                    html += `<td><div class="cell-input-group">
+                        <input type="text" class="cell-text-input" value="${escapeHtmlForEditor(cell.text || '')}"
+                               onchange="updateCellText(${i}, ${j}, 'text', this.value)"
+                               placeholder="Text...">
+                        <label title="Bold"><input type="checkbox" ${cell.bold ? 'checked' : ''}
+                               onchange="updateCellText(${i}, ${j}, 'bold', this.checked)">B</label>
+                        <label title="Underline"><input type="checkbox" ${cell.underline ? 'checked' : ''}
+                               onchange="updateCellText(${i}, ${j}, 'underline', this.checked)">U</label>
+                    </div></td>`;
+                }
+
+                html += '</tr>';
+            }
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function escapeHtmlForEditor(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function updateCellText(rowIndex, colIndex, field, value) {
+            cellTextEditorData[rowIndex][colIndex][field] = value;
+        }
+
+        function applyCellTexts() {
+            updateProp('cellTexts', cellTextEditorData);
+            closeCellTextEditor();
         }
 
         // Save label text from inline editing
@@ -4943,7 +5175,7 @@ Component types and their properties:
 - radio: { label, group, fieldName }
 - button: { text, style (default|primary|success|danger), action }
 - iconbutton: { icon (edit|delete|view|save|add|search|check|cancel|print|copy|refresh|download|upload|settings), iconType (emoji|keenicons), tooltip, action }
-- table: { columns (comma-separated), rows (number), fieldName, showRowIcons (boolean), rowIconsPosition (left|right), rowIcons (comma-separated emojis), hasActionColumn (boolean), actionColumnPosition (left|right), actionIcons (comma-separated: edit,delete,view,etc), actionIconType (emoji|keenicons) }
+- table: { columns (comma-separated), rows (number), fieldName, showRowText (boolean), rowTextPosition (left|right), rowTexts (array of {parts:[{text, bold, underline, icon}]}), hasActionColumn (boolean), actionColumnPosition (left|right), actionIcons (comma-separated: edit,delete,view,etc), actionIconType (emoji|keenicons) }
 - tabs: { tabs (comma-separated tab names), activeTab (index) }
 - panel: { title }
 - notebox: { text }
