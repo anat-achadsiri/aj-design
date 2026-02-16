@@ -96,6 +96,12 @@ The application can import UI mockups from images using Claude's Vision API:
 - Converts to designer components automatically
 - See `API Keys/info.txt` for setup instructions
 
+**IMPORTANT - Sync AI Prompt with Component Properties:**
+When modifying component properties (in `getDefaultProperties()` or adding new components), you MUST also update `getAIPrompt()` function to keep the AI prompt in sync:
+- Update `propDescriptions` object with the new/modified property definitions
+- Add new component types to `componentTypes` array if adding new components
+- Update CRITICAL RULES if the new component has special handling requirements
+
 ### Data Persistence
 - **Save/Save As**: Exports JSON file with screen metadata, theme, canvas size, and components
 - **Load**: Imports JSON file and creates new document tab
@@ -115,6 +121,7 @@ The application can import UI mockups from images using Claude's Vision API:
 | `exportImage()` | PNG export using html2canvas |
 | `changeTheme(theme)` | Applies theme CSS variables |
 | `analyzeImage()` | AI-powered image to component conversion |
+| `getAIPrompt()` | Generates prompt for AI image analysis (sync with getDefaultProperties) |
 | `snapToGrid(value)` | Snaps position value to grid |
 | `createDragImage(comp, el, x, y)` | Creates visual clone during drag operations |
 | `toggleGrid()` / `toggleRulers()` | Toggle grid/ruler display |

@@ -5035,6 +5035,85 @@
             localStorage.setItem('anthropic_api_key', key);
         }
 
+        // Generate AI prompt from component properties (auto-sync with getDefaultProperties)
+        function getAIPrompt() {
+            // Get component types and their properties
+            const componentTypes = ['label', 'title', 'textbox', 'textarea', 'datepicker', 'dropdown',
+                                    'checkbox', 'radio', 'button', 'iconbutton', 'table', 'tabs',
+                                    'panel', 'annotation', 'notebox', 'image'];
+
+            // Property descriptions for AI (more detailed than defaults)
+            const propDescriptions = {
+                label: '{ text: string, fontSize: number (default 14), bold: boolean }',
+                title: '{ text: string, fontSize: number (default 18) }',
+                textbox: '{ placeholder: string, fieldName: string, required: boolean, width: number }',
+                textarea: '{ placeholder: string, fieldName: string, rows: number }',
+                datepicker: '{ placeholder: string (default "dd/mm/yyyy"), fieldName: string }',
+                dropdown: '{ placeholder: string, options: string (comma-separated), fieldName: string }',
+                checkbox: '{ label: string, fieldName: string, checked: boolean }',
+                radio: '{ label: string, group: string, fieldName: string }',
+                button: '{ text: string, style: "default"|"primary"|"success"|"danger", action: string }',
+                iconbutton: '{ icon: "edit"|"delete"|"view"|"save"|"add"|"search"|"check"|"cancel"|"print"|"copy"|"refresh"|"download"|"upload"|"settings"|"user"|"calendar"|"filter"|"sort", iconType: "emoji"|"keenicons", tooltip: string, action: string }',
+                table: '{ columns: string (comma-separated), rows: number, fieldName: string, cellTexts: 2D array of {text: string, bold: boolean, underline: boolean}, hasActionColumn: boolean, actionColumnPosition: "left"|"right", actionIcons: string (comma-separated), actionIconType: "emoji"|"keenicons" }',
+                tabs: '{ tabs: string (comma-separated tab names), activeTab: number (index) }',
+                panel: '{ title: string }',
+                annotation: '{ text: string, direction: "left"|"right" }',
+                notebox: '{ text: string }',
+                image: '{ src: string (base64 or URL), alt: string, objectFit: "contain"|"cover"|"fill" }'
+            };
+
+            let propsText = componentTypes.map(type => `- ${type}: ${propDescriptions[type]}`).join('\n');
+
+            return `Analyze this UI screenshot and generate a JSON array of UI components that can recreate this design.
+
+Each component should have this structure:
+{
+  "id": "comp_N",
+  "type": "${componentTypes.join('|')}",
+  "x": number (position from left in pixels),
+  "y": number (position from top in pixels),
+  "width": number,
+  "height": number,
+  "properties": { type-specific properties }
+}
+
+Component types and their properties:
+${propsText}
+
+CRITICAL RULES - FOLLOW THESE EXACTLY:
+1. Form fields with "label: input" pattern MUST be created as SEPARATE components:
+   - Create a "label" component for the field name (left side)
+   - Create a "textbox" or "datepicker" component for the input (right side)
+   - DO NOT put form fields into a table!
+
+2. Tab bars / Navigation tabs MUST use "tabs" component, NOT table
+
+3. Use "table" component ONLY for actual data grids with multiple data rows (like spreadsheets, lists)
+
+4. Date input fields (showing dates like dd/mm/yyyy) MUST use "datepicker" component
+
+5. Progress bars or status bars should use "panel" component with colored title
+
+6. Position components accurately - measure x, y positions carefully
+
+7. Start component IDs from comp_1
+
+8. Use Thai text if the screenshot contains Thai
+
+9. Return ONLY valid JSON, no markdown or explanation
+
+Example - Form with label and textbox:
+  {"id":"comp_1","type":"label","x":20,"y":50,"width":100,"height":25,"properties":{"text":"ชื่อ:","fontSize":14,"bold":false}},
+  {"id":"comp_2","type":"textbox","x":130,"y":50,"width":200,"height":36,"properties":{"placeholder":"","fieldName":"name"}}
+
+Return format:
+{
+  "canvasWidth": number,
+  "canvasHeight": number,
+  "components": [...]
+}`;
+        }
+
         function showImportImageModal() {
             document.getElementById('importImageModal').classList.remove('hidden');
             loadApiKey();
@@ -5151,48 +5230,7 @@
                                 },
                                 {
                                     type: 'text',
-                                    text: `Analyze this UI screenshot and generate a JSON array of UI components that can recreate this design.
-
-Each component should have this structure:
-{
-  "id": "comp_N",
-  "type": "label|title|textbox|textarea|datepicker|dropdown|checkbox|radio|button|iconbutton|table|tabs|panel|annotation|notebox",
-  "x": number (position from left in pixels),
-  "y": number (position from top in pixels),
-  "width": number,
-  "height": number,
-  "properties": { type-specific properties }
-}
-
-Component types and their properties:
-- label: { text, fontSize (default 14), bold (boolean) }
-- title: { text, fontSize (default 18) }
-- textbox: { placeholder, fieldName, required (boolean) }
-- textarea: { placeholder, fieldName, rows }
-- datepicker: { placeholder, fieldName }
-- dropdown: { placeholder, options (comma-separated), fieldName }
-- checkbox: { label, fieldName, checked (boolean) }
-- radio: { label, group, fieldName }
-- button: { text, style (default|primary|success|danger), action }
-- iconbutton: { icon (edit|delete|view|save|add|search|check|cancel|print|copy|refresh|download|upload|settings), iconType (emoji|keenicons), tooltip, action }
-- table: { columns (comma-separated), rows (number), fieldName, showRowText (boolean), rowTextPosition (left|right), rowTexts (array of {parts:[{text, bold, underline, icon}]}), hasActionColumn (boolean), actionColumnPosition (left|right), actionIcons (comma-separated: edit,delete,view,etc), actionIconType (emoji|keenicons) }
-- tabs: { tabs (comma-separated tab names), activeTab (index) }
-- panel: { title }
-- notebox: { text }
-
-IMPORTANT:
-1. Start component IDs from comp_1
-2. Position components accurately based on the screenshot
-3. Use Thai text if the screenshot contains Thai
-4. Return ONLY valid JSON array, no markdown or explanation
-5. Estimate canvas size needed (canvasWidth, canvasHeight)
-
-Return format:
-{
-  "canvasWidth": number,
-  "canvasHeight": number,
-  "components": [...]
-}`
+                                    text: getAIPrompt()
                                 }
                             ]
                         }]
