@@ -15,19 +15,19 @@ For PNG export functionality, the application loads html2canvas from CDN.
 ## Architecture
 
 ### Single-File Application
-The entire application is contained in `index.html` (~5000+ lines):
-- **CSS** (lines ~10-1390): Inline styles with CSS custom properties for theming
-- **HTML** (lines ~1391-1655): Component palette sidebar, canvas, properties panel, modals
-- **JavaScript** (lines ~1657-end): All application logic
+The entire application is contained in `index.html` (~5350 lines):
+- **CSS** (lines 9-1497): Inline styles with CSS custom properties for theming
+- **HTML** (lines 1499-1766): Component palette sidebar, canvas, properties panel, modals
+- **JavaScript** (lines 1781-5350): All application logic
 
 JavaScript is organized into sections:
-- State variables and initialization (lines ~1658-1700)
-- Document Management System (lines ~1700-2300)
-- Grid/Ruler/Snap functions (lines ~2339-2500)
-- Component rendering and manipulation (lines ~2696-3600)
-- Event handlers (drag, resize, selection) (lines ~3600-4280)
-- Save/Load/Export functions (lines ~4280-4730)
-- AI image import (Claude API integration) (lines ~4730-end)
+- State variables and initialization (~1782-1827)
+- Document class and management system (~1828-2460)
+- Grid/Ruler/Snap functions (~2463-2620)
+- Component functions: `addComponent` (~2820), `renderComponent` (~2915), `getComponentHTML` (~3098), `getDefaultProperties` (~2883)
+- Event handlers (drag, resize, selection) (~3600-4280)
+- Save/Load/Export functions: `docSave` (~2160), `exportImage` (~4856)
+- AI image import: `analyzeImage` (~5190), `getAIPrompt` (~5039)
 
 ### Core State Variables
 ```javascript
@@ -43,7 +43,7 @@ gridSettings           // Grid/ruler/snap settings object
 
 ### Document Management System
 The app supports multiple open documents via a tab interface:
-- `Document` class holds all state for each design file (id, filePath, fileHandle, displayName, isDirty, content, history)
+- `Document` class (line 1828) holds all state for each design file (id, filePath, fileHandle, displayName, isDirty, content, history)
 - Uses File System Access API (`fileHandle`) for direct file saves
 - `newDocument()`, `switchToDocument()`, `closeDocument()` manage tabs
 - Each document has its own undo/redo history and component ID counter
@@ -74,12 +74,9 @@ gridSettings = {
     gridSize: 'small',    // 'small' (10px), 'medium' (50px), 'large' (100px)
     snapSize: 10          // Pixels for snap-to-grid
 }
-
-// Grid size constants
-gridSizes = { small: 10, medium: 50, large: 100 }
 ```
 
-Functions: `toggleGrid()`, `toggleRulers()`, `toggleSnapToGrid()`, `setGridSize()`, `drawRulers()`, `snapToGrid()`
+Functions: `toggleGrid()` (2463), `toggleRulers()` (2474), `snapToGrid()` (2611)
 
 ### Theming
 Six themes available via CSS custom properties. Theme CSS variables are defined at the top of `<style>` using `[data-theme="themename"]` selectors. Theme affects table headers, buttons, tabs, inputs, and labels.
@@ -97,7 +94,7 @@ The application can import UI mockups from images using Claude's Vision API:
 - See `API Keys/info.txt` for setup instructions
 
 **IMPORTANT - Sync AI Prompt with Component Properties:**
-When modifying component properties (in `getDefaultProperties()` or adding new components), you MUST also update `getAIPrompt()` function to keep the AI prompt in sync:
+When modifying component properties (in `getDefaultProperties()` at line 2883 or adding new components), you MUST also update `getAIPrompt()` at line 5039 to keep the AI prompt in sync:
 - Update `propDescriptions` object with the new/modified property definitions
 - Add new component types to `componentTypes` array if adding new components
 - Update CRITICAL RULES if the new component has special handling requirements
@@ -105,27 +102,24 @@ When modifying component properties (in `getDefaultProperties()` or adding new c
 ### Data Persistence
 - **Save/Save As**: Exports JSON file with screen metadata, theme, canvas size, and components
 - **Load**: Imports JSON file and creates new document tab
-- **Export PNG**: Uses html2canvas library (loaded from CDN)
+- **Export PNG**: Uses html2canvas library (loaded from CDN at line 5353)
 
 ## Key Functions
 
-| Function | Purpose |
-|----------|---------|
-| `addComponent(type, x, y)` | Creates new component on canvas |
-| `renderComponent(comp)` | Creates DOM element for component |
-| `getComponentHTML(comp)` | Returns inner HTML for component type |
-| `updateComponentElement(comp)` | Re-renders component after property change |
-| `showProperties(comp)` | Shows component-specific properties panel |
-| `saveHistory()` | Saves current state for undo/redo |
-| `docSave()` / `docSaveAs()` | Document save operations |
-| `exportImage()` | PNG export using html2canvas |
-| `changeTheme(theme)` | Applies theme CSS variables |
-| `analyzeImage()` | AI-powered image to component conversion |
-| `getAIPrompt()` | Generates prompt for AI image analysis (sync with getDefaultProperties) |
-| `snapToGrid(value)` | Snaps position value to grid |
-| `createDragImage(comp, el, x, y)` | Creates visual clone during drag operations |
-| `toggleGrid()` / `toggleRulers()` | Toggle grid/ruler display |
-| `saveDocumentState()` / `loadDocumentState()` | Save/restore document state when switching tabs |
+| Function | Line | Purpose |
+|----------|------|---------|
+| `addComponent(type, x, y)` | 2820 | Creates new component on canvas |
+| `renderComponent(comp)` | 2915 | Creates DOM element for component |
+| `getComponentHTML(comp)` | 3098 | Returns inner HTML for component type |
+| `getDefaultProperties(type)` | 2883 | Returns default properties for component type |
+| `saveHistory()` | - | Saves current state for undo/redo |
+| `docSave()` / `docSaveAs()` | 2160/2177 | Document save operations |
+| `exportImage()` | 4856 | PNG export using html2canvas |
+| `changeTheme(theme)` | - | Applies theme CSS variables |
+| `analyzeImage()` | 5190 | AI-powered image to component conversion |
+| `getAIPrompt()` | 5039 | Generates prompt for AI image analysis |
+| `snapToGrid(value)` | 2611 | Snaps position value to grid |
+| `toggleGrid()` / `toggleRulers()` | 2463/2474 | Toggle grid/ruler display |
 
 ## Project Structure
 

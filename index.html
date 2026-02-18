@@ -706,10 +706,19 @@
             -webkit-appearance: none;
             -moz-appearance: none;
             box-sizing: border-box;
+            color: #1e293b;
         }
 
         .comp-dropdown[disabled] {
             pointer-events: none;
+        }
+
+        .comp-dropdown.placeholder-shown {
+            color: #9ca3af;
+        }
+
+        .comp-dropdown option {
+            color: #1e293b;
         }
 
         .comp-dropdown-wrapper {
@@ -2784,6 +2793,28 @@
             clearSelection();
         });
 
+        // Mousedown anywhere - save any editing label/title before anything else (capture phase)
+        document.addEventListener('mousedown', (e) => {
+            const activeElement = document.activeElement;
+
+            // If we're clicking OUTSIDE the currently edited label/title, save it first
+            if (activeElement && activeElement.getAttribute('contenteditable') === 'true') {
+                if (activeElement.classList.contains('comp-label') || activeElement.classList.contains('comp-title')) {
+                    // Check if clicking outside this element
+                    if (!activeElement.contains(e.target) && activeElement !== e.target) {
+                        disableTextEdit(activeElement); // This saves the text
+                    }
+                }
+            }
+
+            // If clicking outside properties panel, blur any focused property input
+            if (activeElement && activeElement.closest('.properties-panel')) {
+                if (!e.target.closest('.properties-panel')) {
+                    activeElement.blur(); // This triggers onblur and saves the value
+                }
+            }
+        }, true); // Use capture phase to run before other handlers
+
         // Hide context menu on click and disable text editing if clicking outside canvas
         document.addEventListener('click', (e) => {
             contextMenu.classList.add('hidden');
@@ -2887,7 +2918,7 @@
                 textbox: { placeholder: 'Enter text...', width: 200, required: false, fieldName: 'field_name' },
                 textarea: { placeholder: 'Enter text...', rows: 3, fieldName: 'field_name' },
                 datepicker: { placeholder: 'dd/mm/yyyy', fieldName: 'date_field' },
-                dropdown: { placeholder: 'Select...', options: 'Option 1, Option 2, Option 3', fieldName: 'dropdown_field' },
+                dropdown: { placeholder: 'Select...', options: 'Option 1, Option 2, Option 3', defaultValue: '', fieldName: 'dropdown_field' },
                 checkbox: { label: 'Checkbox label', checked: false, fieldName: 'checkbox_field' },
                 radio: { label: 'Radio label', group: 'group1', fieldName: 'radio_field' },
                 button: { text: 'Button', style: 'default', action: 'onClick' },
@@ -3119,10 +3150,15 @@
                     </div>`;
 
                 case 'dropdown':
+                    const defaultVal = p.defaultValue || '';
+                    const placeholderClass = !defaultVal ? ' placeholder-shown' : '';
                     return `<div class="comp-dropdown-wrapper">
-                        <select class="comp-dropdown" disabled ondblclick="enableSelectEdit(this)" onblur="disableSelectEdit(this)" onkeydown="handleSelectKeydown(event, this)">
-                            <option value="">${p.placeholder}</option>
-                            ${p.options.split(',').map(opt => `<option>${opt.trim()}</option>`).join('')}
+                        <select class="comp-dropdown${placeholderClass}" disabled ondblclick="enableSelectEdit(this)" onblur="disableSelectEdit(this)" onkeydown="handleSelectKeydown(event, this)">
+                            <option value="" ${!defaultVal ? 'selected' : ''}>${p.placeholder}</option>
+                            ${p.options.split(',').map(opt => {
+                                const optVal = opt.trim();
+                                return `<option value="${optVal}" ${defaultVal === optVal ? 'selected' : ''}>${optVal}</option>`;
+                            }).join('')}
                         </select>
                     </div>`;
 
@@ -3844,21 +3880,21 @@
                 <div class="property-row">
                     <div class="property-group">
                         <label>X</label>
-                        <input type="number" id="prop_x" value="${Math.round(comp.x)}" onchange="updatePosition('x', this.value)">
+                        <input type="number" id="prop_x" value="${Math.round(comp.x)}" onchange="updatePosition('x', this.value)" onblur="updatePosition('x', this.value)">
                     </div>
                     <div class="property-group">
                         <label>Y</label>
-                        <input type="number" id="prop_y" value="${Math.round(comp.y)}" onchange="updatePosition('y', this.value)">
+                        <input type="number" id="prop_y" value="${Math.round(comp.y)}" onchange="updatePosition('y', this.value)" onblur="updatePosition('y', this.value)">
                     </div>
                 </div>
                 <div class="property-row">
                     <div class="property-group">
                         <label>Width</label>
-                        <input type="number" id="prop_width" value="${comp.width}" onchange="updateSize('width', this.value)">
+                        <input type="number" id="prop_width" value="${comp.width}" onchange="updateSize('width', this.value)" onblur="updateSize('width', this.value)">
                     </div>
                     <div class="property-group">
                         <label>Height</label>
-                        <input type="number" id="prop_height" value="${comp.height}" onchange="updateSize('height', this.value)">
+                        <input type="number" id="prop_height" value="${comp.height}" onchange="updateSize('height', this.value)" onblur="updateSize('height', this.value)">
                     </div>
                 </div>
             `;
@@ -3878,11 +3914,11 @@
                     html += `
                         <div class="property-group">
                             <label>Text</label>
-                            <textarea rows="3" onchange="updateProp('text', this.value)">${p.text}</textarea>
+                            <textarea rows="3" onchange="updateProp('text', this.value)" onblur="updateProp('text', this.value)">${p.text}</textarea>
                         </div>
                         <div class="property-group">
                             <label>Font Size</label>
-                            <input type="number" value="${p.fontSize}" onchange="updateProp('fontSize', parseInt(this.value))">
+                            <input type="number" value="${p.fontSize}" onchange="updateProp('fontSize', parseInt(this.value))" onblur="updateProp('fontSize', parseInt(this.value))">
                         </div>
                         <div class="property-group">
                             <label>Bold</label>
@@ -3897,11 +3933,11 @@
                     html += `
                         <div class="property-group">
                             <label>Text</label>
-                            <input type="text" value="${p.text}" onchange="updateProp('text', this.value)">
+                            <input type="text" value="${p.text}" onchange="updateProp('text', this.value)" onblur="updateProp('text', this.value)">
                         </div>
                         <div class="property-group">
                             <label>Font Size</label>
-                            <input type="number" value="${p.fontSize}" onchange="updateProp('fontSize', parseInt(this.value))">
+                            <input type="number" value="${p.fontSize}" onchange="updateProp('fontSize', parseInt(this.value))" onblur="updateProp('fontSize', parseInt(this.value))">
                         </div>
                     `;
                     break;
@@ -3911,11 +3947,11 @@
                     html += `
                         <div class="property-group">
                             <label>Field Name</label>
-                            <input type="text" value="${p.fieldName || ''}" onchange="updateProp('fieldName', this.value)">
+                            <input type="text" value="${p.fieldName || ''}" onchange="updateProp('fieldName', this.value)" onblur="updateProp('fieldName', this.value)">
                         </div>
                         <div class="property-group">
                             <label>Placeholder</label>
-                            <input type="text" value="${p.placeholder}" onchange="updateProp('placeholder', this.value)">
+                            <input type="text" value="${p.placeholder}" onchange="updateProp('placeholder', this.value)" onblur="updateProp('placeholder', this.value)">
                         </div>
                     `;
                     if (comp.type === 'textbox') {
@@ -3935,28 +3971,36 @@
                     html += `
                         <div class="property-group">
                             <label>Field Name</label>
-                            <input type="text" value="${p.fieldName || ''}" onchange="updateProp('fieldName', this.value)">
+                            <input type="text" value="${p.fieldName || ''}" onchange="updateProp('fieldName', this.value)" onblur="updateProp('fieldName', this.value)">
                         </div>
                         <div class="property-group">
                             <label>Placeholder</label>
-                            <input type="text" value="${p.placeholder}" onchange="updateProp('placeholder', this.value)">
+                            <input type="text" value="${p.placeholder}" onchange="updateProp('placeholder', this.value)" onblur="updateProp('placeholder', this.value)">
                         </div>
                     `;
                     break;
 
                 case 'dropdown':
+                    const dropdownOptions = p.options.split(',').map(opt => opt.trim()).filter(opt => opt);
                     html += `
                         <div class="property-group">
                             <label>Field Name</label>
-                            <input type="text" value="${p.fieldName || ''}" onchange="updateProp('fieldName', this.value)">
+                            <input type="text" value="${p.fieldName || ''}" onchange="updateProp('fieldName', this.value)" onblur="updateProp('fieldName', this.value)">
                         </div>
                         <div class="property-group">
                             <label>Placeholder</label>
-                            <input type="text" value="${p.placeholder}" onchange="updateProp('placeholder', this.value)">
+                            <input type="text" value="${p.placeholder}" onchange="updateProp('placeholder', this.value)" onblur="updateProp('placeholder', this.value)">
                         </div>
                         <div class="property-group">
                             <label>Options (comma separated)</label>
-                            <textarea rows="3" onchange="updateProp('options', this.value)">${p.options}</textarea>
+                            <textarea rows="3" onchange="updateProp('options', this.value)" onblur="updateProp('options', this.value)">${p.options}</textarea>
+                        </div>
+                        <div class="property-group">
+                            <label>Default Value</label>
+                            <select onchange="updateProp('defaultValue', this.value)">
+                                <option value="" ${!p.defaultValue ? 'selected' : ''}>(Show Placeholder)</option>
+                                ${dropdownOptions.map(opt => `<option value="${opt}" ${p.defaultValue === opt ? 'selected' : ''}>${opt}</option>`).join('')}
+                            </select>
                         </div>
                     `;
                     break;
@@ -3966,18 +4010,18 @@
                     html += `
                         <div class="property-group">
                             <label>Field Name</label>
-                            <input type="text" value="${p.fieldName || ''}" onchange="updateProp('fieldName', this.value)">
+                            <input type="text" value="${p.fieldName || ''}" onchange="updateProp('fieldName', this.value)" onblur="updateProp('fieldName', this.value)">
                         </div>
                         <div class="property-group">
                             <label>Label</label>
-                            <input type="text" value="${p.label}" onchange="updateProp('label', this.value)">
+                            <input type="text" value="${p.label}" onchange="updateProp('label', this.value)" onblur="updateProp('label', this.value)">
                         </div>
                     `;
                     if (comp.type === 'radio') {
                         html += `
                             <div class="property-group">
                                 <label>Group Name</label>
-                                <input type="text" value="${p.group}" onchange="updateProp('group', this.value)">
+                                <input type="text" value="${p.group}" onchange="updateProp('group', this.value)" onblur="updateProp('group', this.value)">
                             </div>
                         `;
                     }
@@ -3987,7 +4031,7 @@
                     html += `
                         <div class="property-group">
                             <label>Text</label>
-                            <input type="text" value="${p.text}" onchange="updateProp('text', this.value)">
+                            <input type="text" value="${p.text}" onchange="updateProp('text', this.value)" onblur="updateProp('text', this.value)">
                         </div>
                         <div class="property-group">
                             <label>Style</label>
@@ -4000,7 +4044,7 @@
                         </div>
                         <div class="property-group">
                             <label>Action</label>
-                            <input type="text" value="${p.action || ''}" onchange="updateProp('action', this.value)">
+                            <input type="text" value="${p.action || ''}" onchange="updateProp('action', this.value)" onblur="updateProp('action', this.value)">
                         </div>
                     `;
                     break;
@@ -4039,11 +4083,11 @@
                         </div>
                         <div class="property-group">
                             <label>Tooltip</label>
-                            <input type="text" value="${p.tooltip}" onchange="updateProp('tooltip', this.value)">
+                            <input type="text" value="${p.tooltip}" onchange="updateProp('tooltip', this.value)" onblur="updateProp('tooltip', this.value)">
                         </div>
                         <div class="property-group">
                             <label>Action</label>
-                            <input type="text" value="${p.action || ''}" onchange="updateProp('action', this.value)">
+                            <input type="text" value="${p.action || ''}" onchange="updateProp('action', this.value)" onblur="updateProp('action', this.value)">
                         </div>
                     `;
                     break;
@@ -4052,15 +4096,15 @@
                     html += `
                         <div class="property-group">
                             <label>Field Name</label>
-                            <input type="text" value="${p.fieldName || ''}" onchange="updateProp('fieldName', this.value)">
+                            <input type="text" value="${p.fieldName || ''}" onchange="updateProp('fieldName', this.value)" onblur="updateProp('fieldName', this.value)">
                         </div>
                         <div class="property-group">
                             <label>Columns (comma separated)</label>
-                            <textarea rows="3" onchange="updateProp('columns', this.value)">${p.columns}</textarea>
+                            <textarea rows="3" onchange="updateProp('columns', this.value)" onblur="updateProp('columns', this.value)">${p.columns}</textarea>
                         </div>
                         <div class="property-group">
                             <label>Sample Rows</label>
-                            <input type="number" value="${p.rows}" min="1" max="10" onchange="updateProp('rows', parseInt(this.value))">
+                            <input type="number" value="${p.rows}" min="1" max="10" onchange="updateProp('rows', parseInt(this.value))" onblur="updateProp('rows', parseInt(this.value))">
                         </div>
                         <hr style="margin: 12px 0; border: none; border-top: 1px solid #e2e8f0;">
                         <div class="property-group">
@@ -4096,7 +4140,7 @@
                         </div>
                         <div class="property-group">
                             <label>Action Icons (comma separated)</label>
-                            <textarea rows="2" onchange="updateProp('actionIcons', this.value)" placeholder="edit, delete, view">${p.actionIcons || ''}</textarea>
+                            <textarea rows="2" onchange="updateProp('actionIcons', this.value)" onblur="updateProp('actionIcons', this.value)" placeholder="edit, delete, view">${p.actionIcons || ''}</textarea>
                             <small style="color: #64748b; font-size: 11px;">Options: edit, delete, view, save, add, check, cancel, print, copy, refresh, download, upload, settings</small>
                         </div>
                     `;
@@ -4106,11 +4150,11 @@
                     html += `
                         <div class="property-group">
                             <label>Tab Names (comma separated)</label>
-                            <textarea rows="2" onchange="updateProp('tabs', this.value)">${p.tabs}</textarea>
+                            <textarea rows="2" onchange="updateProp('tabs', this.value)" onblur="updateProp('tabs', this.value)">${p.tabs}</textarea>
                         </div>
                         <div class="property-group">
                             <label>Active Tab Index</label>
-                            <input type="number" value="${p.activeTab}" min="0" onchange="updateProp('activeTab', parseInt(this.value))">
+                            <input type="number" value="${p.activeTab}" min="0" onchange="updateProp('activeTab', parseInt(this.value))" onblur="updateProp('activeTab', parseInt(this.value))">
                         </div>
                     `;
                     break;
@@ -4119,7 +4163,7 @@
                     html += `
                         <div class="property-group">
                             <label>Title</label>
-                            <input type="text" value="${p.title}" onchange="updateProp('title', this.value)">
+                            <input type="text" value="${p.title}" onchange="updateProp('title', this.value)" onblur="updateProp('title', this.value)">
                         </div>
                     `;
                     break;
@@ -4129,7 +4173,7 @@
                     html += `
                         <div class="property-group">
                             <label>Note Text</label>
-                            <textarea rows="3" onchange="updateProp('text', this.value)">${p.text}</textarea>
+                            <textarea rows="3" onchange="updateProp('text', this.value)" onblur="updateProp('text', this.value)">${p.text}</textarea>
                         </div>
                     `;
                     break;
@@ -4149,7 +4193,7 @@
                         ` : ''}
                         <div class="property-group">
                             <label>Alt Text</label>
-                            <input type="text" value="${p.alt || ''}" onchange="updateProp('alt', this.value)">
+                            <input type="text" value="${p.alt || ''}" onchange="updateProp('alt', this.value)" onblur="updateProp('alt', this.value)">
                         </div>
                         <div class="property-group">
                             <label>Object Fit</label>
@@ -4169,20 +4213,28 @@
 
         function updatePosition(prop, value) {
             if (!selectedComponent) return;
-            selectedComponent[prop] = parseInt(value);
+            const newValue = parseInt(value);
+            // Check if value actually changed to prevent duplicate saves
+            if (selectedComponent[prop] === newValue) return;
+            selectedComponent[prop] = newValue;
             updateComponentElement(selectedComponent);
             saveHistory();
         }
 
         function updateSize(prop, value) {
             if (!selectedComponent) return;
-            selectedComponent[prop] = parseInt(value);
+            const newValue = parseInt(value);
+            // Check if value actually changed to prevent duplicate saves
+            if (selectedComponent[prop] === newValue) return;
+            selectedComponent[prop] = newValue;
             updateComponentElement(selectedComponent);
             saveHistory();
         }
 
         function updateProp(prop, value) {
             if (!selectedComponent) return;
+            // Check if value actually changed to prevent duplicate saves
+            if (selectedComponent.properties[prop] === value) return;
             selectedComponent.properties[prop] = value;
             updateComponentElement(selectedComponent);
             showProperties(selectedComponent);
@@ -5049,7 +5101,7 @@
                 textbox: '{ placeholder: string, fieldName: string, required: boolean, width: number }',
                 textarea: '{ placeholder: string, fieldName: string, rows: number }',
                 datepicker: '{ placeholder: string (default "dd/mm/yyyy"), fieldName: string }',
-                dropdown: '{ placeholder: string, options: string (comma-separated), fieldName: string }',
+                dropdown: '{ placeholder: string, options: string (comma-separated), defaultValue: string (one of options or empty for placeholder), fieldName: string }',
                 checkbox: '{ label: string, fieldName: string, checked: boolean }',
                 radio: '{ label: string, group: string, fieldName: string }',
                 button: '{ text: string, style: "default"|"primary"|"success"|"danger", action: string }',
