@@ -571,6 +571,17 @@
             outline-offset: 2px;
         }
 
+        /* Arrow has no bounds/outline */
+        .dropped-component.comp-type-annotation {
+            min-width: 0;
+            min-height: 0;
+            outline: none !important;
+        }
+        .dropped-component.comp-type-annotation.selected,
+        .dropped-component.comp-type-annotation:hover {
+            outline: none !important;
+        }
+
         /* Drag Image Preview */
         .drag-image {
             position: absolute;
@@ -1011,6 +1022,21 @@
         /* Annotation */
         .comp-annotation {
             position: relative;
+        }
+
+        .comp-arrow {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .arrow-handle {
+            opacity: 1;
+        }
+
+        .arrow-handle:hover {
+            transform: scale(1.2);
+            transform-origin: center;
         }
 
         .annotation-line {
@@ -1585,7 +1611,7 @@
                 <h3>Annotation</h3>
                 <div class="component-item" draggable="true" data-type="annotation">
                     <span class="icon">→</span>
-                    <span>Arrow Note</span>
+                    <span>Arrow</span>
                 </div>
                 <div class="component-item" draggable="true" data-type="notebox">
                     <span class="icon">📝</span>
@@ -2882,7 +2908,7 @@
                 table: 500,
                 tabs: 400,
                 panel: 300,
-                annotation: 150,
+                annotation: 80,
                 notebox: 200,
                 image: 300
             };
@@ -2904,7 +2930,7 @@
                 table: 150,
                 tabs: 200,
                 panel: 150,
-                annotation: 50,
+                annotation: 1,
                 notebox: 60,
                 image: 200
             };
@@ -2935,7 +2961,7 @@
                 },
                 tabs: { tabs: 'Tab 1, Tab 2, Tab 3', activeTab: 0 },
                 panel: { title: 'Panel Title' },
-                annotation: { text: 'Annotation note', direction: 'right' },
+                annotation: { endX: 80, endY: 0 },
                 notebox: { text: 'Note: Important information here' },
                 image: { src: '', alt: 'Image', objectFit: 'contain' }
             };
@@ -2946,7 +2972,7 @@
         function renderComponent(comp) {
             const el = document.createElement('div');
             el.id = comp.id;
-            el.className = 'dropped-component';
+            el.className = 'dropped-component' + (comp.type === 'annotation' ? ' comp-type-annotation' : '');
             el.style.left = comp.x + 'px';
             el.style.top = comp.y + 'px';
             el.style.width = comp.width + 'px';
@@ -3123,7 +3149,13 @@
             });
 
             canvas.appendChild(el);
-            addResizeHandles(el, comp);
+
+            // Arrow/annotation doesn't use resize handles - uses arrow handles instead
+            if (comp.type === 'annotation') {
+                addArrowHandleListeners(el, comp);
+            } else {
+                addResizeHandles(el, comp);
+            }
         }
 
         function getComponentHTML(comp) {
@@ -3348,14 +3380,33 @@
                     </div>`;
 
                 case 'annotation':
-                    return `<div class="comp-annotation">
-                        <div style="position: relative; display: flex; align-items: center; gap: 8px;">
-                            <div style="width: 80px; height: 2px; background: #3b82f6; position: relative;">
-                                <div style="position: absolute; right: -6px; top: -4px; width: 0; height: 0; border-left: 8px solid #3b82f6; border-top: 5px solid transparent; border-bottom: 5px solid transparent;"></div>
-                            </div>
-                            <div class="annotation-box">${p.text}</div>
-                        </div>
-                    </div>`;
+                    // Arrow: start at component position (0,0 in SVG), end at (endX, endY)
+                    const aEndX = p.endX ?? 80;
+                    const aEndY = p.endY ?? 0;
+
+                    // Calculate angle for arrowhead
+                    const aAngle = Math.atan2(aEndY, aEndX);
+                    const aLen = 10;
+                    const aSpread = Math.PI / 6; // 30 degrees
+
+                    // Arrowhead points
+                    const aX1 = aEndX - aLen * Math.cos(aAngle - aSpread);
+                    const aY1 = aEndY - aLen * Math.sin(aAngle - aSpread);
+                    const aX2 = aEndX - aLen * Math.cos(aAngle + aSpread);
+                    const aY2 = aEndY - aLen * Math.sin(aAngle + aSpread);
+
+                    // Use separate positioned elements for each handle (like start handle works)
+                    return `
+                        <svg style="position: absolute; left: 0; top: 0; overflow: visible;" width="1" height="1">
+                            <line x1="0" y1="0" x2="${aEndX}" y2="${aEndY}" stroke="#3b82f6" stroke-width="2" />
+                            <polygon points="${aEndX},${aEndY} ${aX1},${aY1} ${aX2},${aY2}" fill="#3b82f6" />
+                        </svg>
+                        <svg class="arrow-handle arrow-start" style="position: absolute; left: -5px; top: -5px; cursor: move;" width="10" height="10">
+                            <circle cx="5" cy="5" r="5" fill="white" stroke="#3b82f6" stroke-width="2" />
+                        </svg>
+                        <svg class="arrow-handle arrow-end" style="position: absolute; left: ${aEndX - 5}px; top: ${aEndY - 5}px; cursor: move;" width="10" height="10">
+                            <circle cx="5" cy="5" r="5" fill="#3b82f6" stroke="#3b82f6" stroke-width="2" />
+                        </svg>`;
 
                 case 'notebox':
                     return `<div class="annotation-box" style="width: 100%">${p.text}</div>`;
@@ -3386,6 +3437,99 @@
                 });
                 el.appendChild(handle);
             });
+        }
+
+        // Arrow handle listeners for dragging start/end points
+        function addArrowHandleListeners(el, comp) {
+            const startHandle = el.querySelector('.arrow-start');
+            const endHandle = el.querySelector('.arrow-end');
+
+            if (startHandle) {
+                startHandle.addEventListener('mousedown', (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    startArrowHandleDrag(e, comp.id, 'start');
+                });
+            }
+
+            if (endHandle) {
+                endHandle.addEventListener('mousedown', (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    startArrowHandleDrag(e, comp.id, 'end');
+                });
+            }
+        }
+
+        function startArrowHandleDrag(e, compId, handleType) {
+            const comp = components.find(c => c.id === compId);
+            if (!comp) return;
+
+            selectComponent(compId);
+            const el = document.getElementById(compId);
+            const canvas = document.getElementById('canvas');
+            const p = comp.properties;
+
+            // Store offset from mouse to handle center at drag start
+            const elRect = el.getBoundingClientRect();
+            const canvasRect = canvas.getBoundingClientRect();
+
+            // Current handle positions in canvas coords
+            // Start is at component position, end is relative offset
+            let x1 = comp.x;
+            let y1 = comp.y;
+            let x2 = comp.x + (p.endX ?? 80);
+            let y2 = comp.y + (p.endY ?? 0);
+
+            const onMouseMove = (moveE) => {
+                // Get mouse position relative to canvas
+                let mouseX = moveE.clientX - canvasRect.left;
+                let mouseY = moveE.clientY - canvasRect.top;
+
+                // Apply snap if enabled
+                if (gridSettings.snapToGrid) {
+                    mouseX = snapToGrid(mouseX);
+                    mouseY = snapToGrid(mouseY);
+                }
+
+                // Update the dragged handle
+                if (handleType === 'start') {
+                    x1 = mouseX;
+                    y1 = mouseY;
+                } else {
+                    x2 = mouseX;
+                    y2 = mouseY;
+                }
+
+                // Update component - use x1,y1 as anchor, store relative offset for x2,y2
+                comp.x = x1;
+                comp.y = y1;
+                comp.width = 1;
+                comp.height = 1;
+
+                // Store as relative from x1,y1
+                p.startX = 0;
+                p.startY = 0;
+                p.endX = x2 - x1;
+                p.endY = y2 - y1;
+
+                // Update element position
+                el.style.left = comp.x + 'px';
+                el.style.top = comp.y + 'px';
+                el.innerHTML = getComponentHTML(comp);
+                addArrowHandleListeners(el, comp);
+            };
+
+            const onMouseUp = () => {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                saveHistory();
+                updatePropertiesPanel();
+                autoResizeCanvas();
+            };
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
         }
 
         function startResize(e, compId, handlePos) {
@@ -4169,6 +4313,17 @@
                     break;
 
                 case 'annotation':
+                    html += `
+                        <div class="property-group">
+                            <label>Direction</label>
+                            <select onchange="updateProp('direction', this.value)">
+                                <option value="right" ${(p.direction || 'right') === 'right' ? 'selected' : ''}>→ Right</option>
+                                <option value="left" ${p.direction === 'left' ? 'selected' : ''}>← Left</option>
+                            </select>
+                        </div>
+                    `;
+                    break;
+
                 case 'notebox':
                     html += `
                         <div class="property-group">
@@ -5109,7 +5264,7 @@
                 table: '{ columns: string (comma-separated), rows: number, fieldName: string, cellTexts: 2D array of {text: string, bold: boolean, underline: boolean}, hasActionColumn: boolean, actionColumnPosition: "left"|"right", actionIcons: string (comma-separated), actionIconType: "emoji"|"keenicons" }',
                 tabs: '{ tabs: string (comma-separated tab names), activeTab: number (index) }',
                 panel: '{ title: string }',
-                annotation: '{ text: string, direction: "left"|"right" }',
+                annotation: '{ direction: "left"|"right" }',
                 notebox: '{ text: string }',
                 image: '{ src: string (base64 or URL), alt: string, objectFit: "contain"|"cover"|"fill" }'
             };
